@@ -1,27 +1,29 @@
-import {v2 as cloudinary} from 'cloudinary'
-import fs from "fs"
+import { v2 as cloudinary } from 'cloudinary';
+import streamifier from 'streamifier';
 
 cloudinary.config({ 
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-    api_key: process.env.CLOUDINARY_API_KEY, 
-    api_secret: process.env.CLOUDINARY_API_SECRET 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET 
 });
 
-const uploadOnCloudinary = async(localFilePath) => {
-    try{
-        if(!localFilePath)  return null
+const uploadOnCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    if (!buffer) return reject(new Error("No buffer provided"));
 
-        const response = await cloudinary.uploader.upload(localFilePath, {
-            resource_type:'auto'
-        })
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'auto',
+        folder: 'avatars' // optional folder name in Cloudinary
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
 
-        fs.unlinkSync(localFilePath)
+    streamifier.createReadStream(buffer).pipe(uploadStream);
+  });
+};
 
-        return response;
-    }catch(err){
-        fs.unlinkSync(localFilePath)
-        return null;
-    }
-}
-
-export {uploadOnCloudinary};
+export { uploadOnCloudinary };

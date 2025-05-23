@@ -42,17 +42,13 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with email or username already exist");
     }
 
-    const avatarLocalPath = req.file?.path;
+    const avatarBuffer = req.file?.buffer;
 
-    if(!avatarLocalPath){
+    if(!avatarBuffer){
         throw new ApiError(400, "Avatar file is required")
     }
 
-    const avatar  = await uploadOnCloudinary(avatarLocalPath)
-
-    if(!avatar){
-        throw new ApiError(400, "Avatar file is required")
-    }
+    const avatar = await uploadOnCloudinary(avatarBuffer);
 
     console.log(avatar);
 
@@ -173,7 +169,7 @@ const getCurrentUser = asyncHandler(async(req,res) => {
     ))
 })
     
-const addSolutionToHistory = asyncHandler(async (req, res) => {
+const addPostToHistory = asyncHandler(async (req, res) => {
     const { solutionId} = req.body; 
     const userId = req.user._id;
     console.log(userId);
@@ -183,7 +179,7 @@ const addSolutionToHistory = asyncHandler(async (req, res) => {
 
     const user = await User.findByIdAndUpdate(userId, {
         $push:{
-            submission:solutionId
+            post:solutionId
         }
     })
 
@@ -200,14 +196,11 @@ const addSolutionToHistory = asyncHandler(async (req, res) => {
     ))
 })
 
-const getSolutionHistory = asyncHandler(async (req, res) => {
+const getPostHistory = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     if (!userId) {
         throw new ApiError(400, "userId is required!");
     }
-
-    // Convert userId to ObjectId if it isn't already
-    // const objectId = new ObjectId(userId);
 
     const userArchive = await User.aggregate([
         {
@@ -217,10 +210,10 @@ const getSolutionHistory = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: 'solutions',
+                from: 'posts',
                 localField: 'submission',
                 foreignField: '_id',
-                as: 'solutions',
+                as: 'posts',
                 pipeline: [
                     {
                         $lookup: {
@@ -279,35 +272,13 @@ const getUser = asyncHandler(async (req, res) => {
     ))
 })
 
-const IncreaseLikeOfUser = asyncHandler(async (req ,res) => {
-    const {userId} = req.body;
-
-    if (!userId) {
-        throw new ApiError(401, "userId not found")
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-        userId,
-        { $inc: { wins: 1 } },
-        { new: true } 
-    ).lean();
-    
-    console.log(updatedUser);
-    return res.status(200)
-    .json(new ApiResponse(
-        200,
-        updatedUser,
-        "Increased User Wins Successfully"
-    ))
-})
 
 export {
     registerUser,
     loginUser,
     refreshAccessToken,
     getCurrentUser,
-    addSolutionToHistory,
-    getSolutionHistory,
-    getUser,
-    IncreaseLikeOfUser
+    addPostToHistory,
+    getPostHistory,
+    getUser
 }

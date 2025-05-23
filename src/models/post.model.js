@@ -11,7 +11,17 @@ const postSchema = new Schema({
     },
     content:{
         type:String,
-        trim:true
+        trim:true,
+        maxLength: 280,
+    },
+    type:{
+        type:String,
+        required:true,
+        enum: ['Ask for help', 'Recommend a place', 'Share a local update', 'Event announcement'],
+    },
+    state:{
+        type:String,
+        required:true
     },
     comment:[
         {
