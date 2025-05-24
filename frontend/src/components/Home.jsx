@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Search, Bell, Plus, Home, User, Compass, Bookmark, MapPin, TrendingUp, Sparkles, Globe, Users, Calendar, Image, Smile, Send, ChevronRight, Filter, Zap } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Search, Bell, Plus, Home, User, Compass, Bookmark, MapPin, TrendingUp, Sparkles, Users as UsersIcon, Calendar, Image as ImageIcon, Smile, Send, ChevronRight, Filter, Zap, X } from 'lucide-react';
 
 // Design System - Colors & Gradients
 const designSystem = {
@@ -45,62 +45,16 @@ const designSystem = {
     background: 'from-slate-50 via-blue-50/30 to-indigo-50/20',
     glass: 'from-white/70 to-white/50',
     brand: 'from-blue-600 via-purple-600 to-cyan-600'
-  },
-  typography: {
-    fontFamily: {
-      sans: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-    },
-    fontSize: {
-      xs: '0.75rem',
-      sm: '0.875rem',
-      base: '1rem',
-      lg: '1.125rem',
-      xl: '1.25rem',
-      '2xl': '1.5rem',
-      '3xl': '1.875rem',
-      '4xl': '2.25rem'
-    },
-    fontWeight: {
-      normal: '400',
-      medium: '500',
-      semibold: '600',
-      bold: '700',
-      extrabold: '800'
-    }
-  },
-  spacing: {
-    xs: '0.5rem',
-    sm: '0.75rem',
-    base: '1rem',
-    lg: '1.5rem',
-    xl: '2rem',
-    '2xl': '3rem',
-    '3xl': '4rem'
-  },
-  borderRadius: {
-    sm: '0.5rem',
-    base: '0.75rem',
-    lg: '1rem',
-    xl: '1.5rem',
-    '2xl': '2rem',
-    full: '9999px'
-  },
-  shadows: {
-    sm: 'shadow-sm',
-    base: 'shadow-lg shadow-gray-200/20',
-    lg: 'shadow-xl shadow-gray-200/30',
-    colored: 'shadow-lg shadow-blue-200/50',
-    glow: 'shadow-2xl shadow-blue-300/40'
   }
 };
 
 const SocialApp = () => {
   const [activeFilter, setActiveFilter] = useState('Nearby');
   const [likedPosts, setLikedPosts] = useState(new Set());
-  const [expandedPost, setExpandedPost] = useState(null);
   const [newPostContent, setNewPostContent] = useState('');
   const [showNewPost, setShowNewPost] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('Feed');
 
   const filters = [
     { name: 'Nearby', icon: MapPin, count: '2.3K' },
@@ -176,49 +130,8 @@ const SocialApp = () => {
       shares: 15,
       engagement: 92,
       tags: ['#DigitalArt', '#GujaratiCulture', '#Mandala']
-    },
-    {
-      id: 4,
-      user: {
-        name: 'Vikram Singh',
-        username: 'vikram_fit',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-        verified: false,
-        level: 'Fitness Enthusiast'
-      },
-      content: 'Morning run through India Gate was incredible today! The weather is perfect and the energy is contagious. Planning a group run tomorrow at 6 AM. Who\'s joining the #DelhiRunners crew?',
-      images: ['https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=500&h=300&fit=crop'],
-      type: 'Activity',
-      state: 'Delhi',
-      city: 'New Delhi',
-      time: '8h',
-      likes: 98,
-      comments: 22,
-      shares: 8,
-      engagement: 78,
-      tags: ['#MorningRun', '#DelhiRunners', '#Fitness']
     }
   ];
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  const handleLike = (postId) => {
-    setLikedPosts(prev => {
-      const newLiked = new Set(prev);
-      if (newLiked.has(postId)) {
-        newLiked.delete(postId);
-      } else {
-        newLiked.add(postId);
-      }
-      return newLiked;
-    });
-  };
 
   const getTypeConfig = (type) => {
     const configs = {
@@ -250,91 +163,121 @@ const SocialApp = () => {
     return configs[type] || configs['Discovery'];
   };
 
-  return (
-    <div className={`min-h-screen bg-gradient-to-br ${designSystem.gradients.background} relative overflow-hidden`}>
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute w-96 h-96 bg-gradient-to-r from-blue-400/10 to-cyan-400/10 rounded-full blur-3xl"
-          style={{
-            transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
-            transition: 'transform 0.1s ease-out'
-          }}
-        />
-        <div 
-          className="absolute top-1/2 right-0 w-64 h-64 bg-gradient-to-r from-purple-400/10 to-pink-400/10 rounded-full blur-2xl"
-          style={{
-            transform: `translate(${mousePosition.x * -0.01}px, ${mousePosition.y * -0.01}px)`,
-            transition: 'transform 0.1s ease-out'
-          }}
-        />
-      </div>
+  const handleLike = (postId) => {
+    setLikedPosts(prev => {
+      const newLiked = new Set(prev);
+      if (newLiked.has(postId)) {
+        newLiked.delete(postId);
+      } else {
+        newLiked.add(postId);
+      }
+      return newLiked;
+    });
+  };
 
-      {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg shadow-gray-200/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo & Search */}
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className={`w-10 h-10 bg-gradient-to-r ${designSystem.gradients.brand} rounded-xl flex items-center justify-center shadow-lg shadow-blue-200/50`}>
-                    <span className="text-white font-extrabold text-base">LC</span>
-                  </div>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-pulse" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-extrabold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                    LocalConnect
-                  </h1>
-                  <p className="text-xs text-gray-500 font-medium -mt-1">Community First</p>
-                </div>
-              </div>
-              
-              <div className="hidden md:flex items-center bg-white/70 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-white/30 shadow-sm ml-6 w-80">
-                <Search className="w-4 h-4 text-gray-400 mr-3" />
-                <input 
-                  type="text" 
-                  placeholder="Discover communities, people, events..." 
-                  className="bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 flex-1 font-medium"
-                />
-                <kbd className="hidden sm:inline-flex items-center px-2 py-1 border border-gray-200 rounded text-xs font-mono text-gray-500 bg-gray-50">⌘K</kbd>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+      {/* Mobile Header */}
+      <header className="lg:hidden sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-sm">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">LC</span>
+            </div>
+            <h1 className="font-bold text-gray-900">LocalConnect</h1>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <button className="p-2 text-gray-600">
+              <Search className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-gray-600"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <MoreHorizontal className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-40 bg-white/95 backdrop-blur-xl p-4 overflow-y-auto">
+          <div className="flex justify-end mb-6">
+            <button 
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div className="space-y-6">
+            {/* Profile */}
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+              <img 
+                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face" 
+                alt="Profile" 
+                className="w-12 h-12 rounded-xl object-cover"
+              />
+              <div>
+                <h3 className="font-semibold text-gray-900">Vikram Singh</h3>
+                <p className="text-sm text-gray-500">Level 5 Explorer</p>
               </div>
             </div>
             
-            {/* Right Navigation */}
-            <div className="flex items-center space-x-3">
-              <button className="relative p-2.5 hover:bg-white/60 rounded-xl transition-all duration-200">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              </button>
-              <button 
-                onClick={() => setShowNewPost(!showNewPost)}
-                className={`bg-gradient-to-r ${designSystem.gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white px-5 py-2.5 rounded-xl flex items-center space-x-2 transition-all duration-200 shadow-lg shadow-blue-200/50 hover:shadow-blue-300/60 hover:scale-105 font-medium`}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Create</span>
-              </button>
-              <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" 
-                  alt="Profile" 
-                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-blue-200/50 hover:ring-blue-300/70 transition-all duration-200 cursor-pointer hover:scale-105"
-                />
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-              </div>
-            </div>
+            {/* Navigation */}
+            <nav className="space-y-1">
+              {[
+                { icon: Home, label: 'Feed', active: activeTab === 'Feed' },
+                { icon: Compass, label: 'Explore', active: activeTab === 'Explore' },
+                { icon: UsersIcon, label: 'Communities', active: activeTab === 'Communities' },
+                { icon: Calendar, label: 'Events', active: activeTab === 'Events' },
+                { icon: Bookmark, label: 'Saved', active: activeTab === 'Saved' },
+                { icon: User, label: 'Profile', active: activeTab === 'Profile' }
+              ].map(({ icon: Icon, label, active }) => (
+                <button 
+                  key={label}
+                  onClick={() => {
+                    setActiveTab(label);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left ${
+                    active 
+                      ? 'bg-blue-50 text-blue-600 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </nav>
+            
+            {/* Create Post Button */}
+            <button 
+              onClick={() => {
+                setShowNewPost(true);
+                setMobileMenuOpen(false);
+              }}
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-xl font-medium flex items-center justify-center space-x-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Create Post</span>
+            </button>
           </div>
         </div>
-      </nav>
+      )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar */}
-          <div className="hidden lg:block w-64 shrink-0">
-            <div className="sticky top-24 space-y-6">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto lg:px-6">
+        <div className="flex flex-col lg:flex-row">
+          {/* Left Sidebar - Desktop */}
+          <aside className="hidden lg:block w-64 shrink-0">
+            <div className="sticky top-6 space-y-6 p-4">
               {/* Profile Card */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-5 border border-white/30 shadow-lg shadow-gray-200/20">
+              <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 border border-gray-200 shadow-sm">
                 <div className="flex items-center space-x-3 mb-5">
                   <img 
                     src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face" 
@@ -342,7 +285,7 @@ const SocialApp = () => {
                     className="w-11 h-11 rounded-xl object-cover"
                   />
                   <div>
-                    <h3 className="font-semibold text-gray-900 text-base">Vikram Singh</h3>
+                    <h3 className="font-semibold text-gray-900">Vikram Singh</h3>
                     <p className="text-sm text-gray-500">Level 5 Explorer</p>
                   </div>
                 </div>
@@ -363,75 +306,69 @@ const SocialApp = () => {
               </div>
               
               {/* Navigation Menu */}
-              <div className="space-y-1">
+              <nav className="space-y-1">
                 {[
-                  { icon: Home, label: 'Feed', active: true, badge: '12' },
-                  { icon: Compass, label: 'Explore', badge: '5' },
-                  { icon: Users, label: 'Communities', badge: '2' },
-                  { icon: Calendar, label: 'Events', badge: '8' },
-                  { icon: Bookmark, label: 'Saved' },
-                  { icon: User, label: 'Profile' }
+                  { icon: Home, label: 'Feed', active: activeTab === 'Feed', badge: '12' },
+                  { icon: Compass, label: 'Explore', active: activeTab === 'Explore', badge: '5' },
+                  { icon: UsersIcon, label: 'Communities', active: activeTab === 'Communities', badge: '2' },
+                  { icon: Calendar, label: 'Events', active: activeTab === 'Events', badge: '8' },
+                  { icon: Bookmark, label: 'Saved', active: activeTab === 'Saved' },
+                  { icon: User, label: 'Profile', active: activeTab === 'Profile' }
                 ].map(({ icon: Icon, label, active, badge }) => (
                   <button 
                     key={label}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group text-left ${
+                    onClick={() => setActiveTab(label)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left ${
                       active 
-                        ? `bg-gradient-to-r ${designSystem.gradients.primary} text-white shadow-lg shadow-blue-600/30` 
-                        : 'text-gray-700 hover:bg-white/70 hover:shadow-md'
+                        ? 'bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-600 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <Icon className="w-4 h-4" />
-                      <span className="font-medium text-sm">{label}</span>
+                      <Icon className="w-5 h-5" />
+                      <span>{label}</span>
                     </div>
                     {badge && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                        active ? 'bg-white/20 text-white' : 'bg-red-500 text-white'
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${
+                        active ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'
                       }`}>
                         {badge}
                       </span>
                     )}
                   </button>
                 ))}
-              </div>
+              </nav>
+              
+              {/* Create Post Button */}
+              <button 
+                onClick={() => setShowNewPost(true)}
+                className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-xl font-medium flex items-center justify-center space-x-2 hover:from-blue-700 hover:to-cyan-700 transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Create Post</span>
+              </button>
             </div>
-          </div>
+          </aside>
 
-          {/* Main Content */}
-          <div className="flex-1 max-w-2xl">
-            {/* Filter Bar */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-2 mb-6 border border-white/30 shadow-lg shadow-gray-200/20">
-              <div className="flex flex-wrap gap-2">
-                {filters.map(({ name, icon: Icon, count }) => (
-                  <button
-                    key={name}
-                    onClick={() => setActiveFilter(name)}
-                    className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                      activeFilter === name
-                        ? `bg-gradient-to-r ${designSystem.gradients.primary} text-white shadow-lg shadow-blue-600/30 scale-105`
-                        : 'text-gray-600 hover:bg-white/80 hover:text-gray-900 hover:shadow-sm hover:scale-102'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{name}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                      activeFilter === name ? 'bg-white/20' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Create Post */}
+          {/* Main Content Area */}
+          <main className="flex-1 lg:max-w-2xl lg:px-4">
+            {/* Create Post (Mobile) */}
             {showNewPost && (
-              <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 mb-6 border border-white/30 shadow-lg shadow-gray-200/20">
-                <div className="flex space-x-4">
+              <div className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="font-bold text-lg">Create Post</h2>
+                  <button 
+                    onClick={() => setShowNewPost(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex space-x-3">
                   <img 
                     src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face" 
                     alt="Your avatar" 
-                    className="w-11 h-11 rounded-xl object-cover"
+                    className="w-10 h-10 rounded-lg object-cover"
                   />
                   <div className="flex-1">
                     <textarea
@@ -441,21 +378,24 @@ const SocialApp = () => {
                       className="w-full bg-transparent outline-none text-gray-800 placeholder-gray-500 resize-none text-base leading-relaxed"
                       rows="3"
                     />
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
                       <div className="flex items-center space-x-3">
                         <button className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors">
-                          <Image className="w-4 h-4" />
+                          <ImageIcon className="w-5 h-5" />
                         </button>
                         <button className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors">
-                          <Smile className="w-4 h-4" />
+                          <Smile className="w-5 h-5" />
                         </button>
                         <button className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors">
-                          <MapPin className="w-4 h-4" />
+                          <MapPin className="w-5 h-5" />
                         </button>
                       </div>
-                      <button className={`bg-gradient-to-r ${designSystem.gradients.primary} text-white px-5 py-2 rounded-lg flex items-center space-x-2 hover:scale-105 transition-all duration-200 font-medium text-sm`}>
+                      <button 
+                        className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:from-blue-700 hover:to-cyan-700 transition-all font-medium text-sm"
+                        disabled={!newPostContent.trim()}
+                      >
                         <Send className="w-4 h-4" />
-                        <span>Share</span>
+                        <span>Post</span>
                       </button>
                     </div>
                   </div>
@@ -463,40 +403,65 @@ const SocialApp = () => {
               </div>
             )}
 
+            {/* Filter Bar */}
+            <div className="sticky top-0 lg:top-6 z-10 bg-white/90 backdrop-blur-xl p-2 mb-4 border-b lg:border lg:rounded-xl lg:shadow-sm border-gray-200">
+              <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+                {filters.map(({ name, icon: Icon, count }) => (
+                  <button
+                    key={name}
+                    onClick={() => setActiveFilter(name)}
+                    className={`flex-shrink-0 flex items-center space-x-2 px-3 py-2 rounded-lg font-medium text-sm ${
+                      activeFilter === name
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{name}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                      activeFilter === name ? 'bg-white/20' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Posts Feed */}
-            <div className="space-y-6">
+            <div className="space-y-4 pb-20 lg:pb-4">
               {posts.map((post) => {
                 const typeConfig = getTypeConfig(post.type);
                 return (
                   <article 
                     key={post.id} 
-                    className="bg-white/90 backdrop-blur-xl rounded-2xl border border-white/30 overflow-hidden hover:shadow-xl hover:shadow-gray-300/30 transition-all duration-300 group hover:scale-[1.01] hover:bg-white/95"
+                    className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                   >
                     {/* Post Header */}
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-5">
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start space-x-3">
                           <div className="relative">
                             <img 
                               src={post.user.avatar} 
                               alt={post.user.name}
-                              className="w-12 h-12 rounded-xl object-cover ring-2 ring-white shadow-md"
+                              className="w-10 h-10 rounded-lg object-cover"
                             />
                             {post.user.verified && (
-                              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white">
-                                <span className="text-white text-xs">✓</span>
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center border border-white">
+                                <span className="text-white text-[10px]">✓</span>
                               </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-2 mb-1">
-                              <h3 className="font-bold text-gray-900 text-base truncate">{post.user.name}</h3>
-                              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${typeConfig.bg} ${typeConfig.text} flex items-center space-x-1 shrink-0`}>
+                              <h3 className="font-bold text-gray-900 text-sm truncate">{post.user.name}</h3>
+                              <span className={`px-2 py-1 rounded-md text-xs font-medium ${typeConfig.bg} ${typeConfig.text} flex items-center space-x-1`}>
                                 <span>{typeConfig.icon}</span>
-                                <span>{post.user.level}</span>
+                                <span className="hidden sm:inline">{post.user.level}</span>
                               </span>
                             </div>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                            <div className="flex items-center flex-wrap gap-x-2 text-xs text-gray-500">
                               <span className="font-medium">@{post.user.username}</span>
                               <span>•</span>
                               <div className="flex items-center space-x-1">
@@ -509,25 +474,25 @@ const SocialApp = () => {
                           </div>
                         </div>
                         
-                        <div className="flex items-center space-x-2">
-                          <div className={`px-3 py-1.5 rounded-xl font-bold text-xs ${typeConfig.bg} ${typeConfig.text} border border-white/50 flex items-center space-x-1`}>
+                        <div className="flex items-center space-x-1">
+                          <div className={`px-2 py-1 rounded-md font-medium text-xs ${typeConfig.bg} ${typeConfig.text} flex items-center space-x-1`}>
                             <span>{typeConfig.icon}</span>
-                            <span>{post.type}</span>
+                            <span className="hidden sm:inline">{post.type}</span>
                           </div>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200">
-                            <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                          <button className="p-1 text-gray-400 hover:text-gray-600">
+                            <MoreHorizontal className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
 
                       {/* Post Content */}
-                      <div className="mb-5">
-                        <p className="text-gray-800 leading-relaxed text-base font-medium mb-3">{post.content}</p>
+                      <div className="mb-4">
+                        <p className="text-gray-800 leading-relaxed text-sm sm:text-base mb-3">{post.content}</p>
                         
                         {/* Tags */}
-                        <div className="flex flex-wrap gap-2 mb-4">
+                        <div className="flex flex-wrap gap-2 mb-3">
                           {post.tags.map((tag) => (
-                            <span key={tag} className="text-blue-600 hover:text-blue-700 font-medium text-sm cursor-pointer hover:underline transition-colors">
+                            <span key={tag} className="text-blue-600 hover:text-blue-700 font-medium text-xs sm:text-sm cursor-pointer hover:underline">
                               {tag}
                             </span>
                           ))}
@@ -536,13 +501,13 @@ const SocialApp = () => {
 
                       {/* Post Images */}
                       {post.images && (
-                        <div className={`rounded-xl overflow-hidden mb-5 ${post.images.length > 1 ? 'grid grid-cols-2 gap-2' : ''}`}>
+                        <div className={`rounded-lg overflow-hidden mb-4 ${post.images.length > 1 ? 'grid grid-cols-2 gap-2' : ''}`}>
                           {post.images.map((image, index) => (
                             <img 
                               key={index}
                               src={image} 
                               alt="Post content" 
-                              className="w-full h-60 object-cover hover:scale-110 transition-transform duration-500 cursor-pointer"
+                              className="w-full h-40 sm:h-48 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
                             />
                           ))}
                         </div>
@@ -550,16 +515,16 @@ const SocialApp = () => {
 
                       {/* Event Details */}
                       {post.type === 'Event' && (
-                        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-5 border border-blue-100">
-                          <div className="flex items-center justify-between">
+                        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-3 mb-4 border border-blue-100">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div className="flex items-center space-x-3">
                               <Calendar className="w-4 h-4 text-blue-600" />
                               <div>
                                 <p className="font-semibold text-blue-900 text-sm">{post.eventDate}</p>
-                                <p className="text-sm text-blue-600">{post.eventLocation}</p>
+                                <p className="text-xs text-blue-600">{post.eventLocation}</p>
                               </div>
                             </div>
-                            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors">
+                            <button className="bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium text-xs hover:bg-blue-700 transition-colors">
                               Join Event
                             </button>
                           </div>
@@ -567,44 +532,40 @@ const SocialApp = () => {
                       )}
 
                       {/* Post Actions */}
-                      <div className="flex items-center justify-between pt-5 border-t border-gray-100">
-                        <div className="flex items-center space-x-6">
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div className="flex items-center space-x-4 sm:space-x-6">
                           <button 
                             onClick={() => handleLike(post.id)}
-                            className={`flex items-center space-x-2 transition-all duration-200 hover:scale-110 ${
+                            className={`flex items-center space-x-1 ${
                               likedPosts.has(post.id) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
                             }`}
                           >
                             <Heart 
-                              className={`w-5 h-5 transition-all duration-200 ${
-                                likedPosts.has(post.id) ? 'fill-red-500 text-red-500 scale-110' : ''
+                              className={`w-5 h-5 ${
+                                likedPosts.has(post.id) ? 'fill-red-500' : ''
                               }`} 
                             />
-                            <span className="font-bold text-base">
+                            <span className="font-medium text-sm">
                               {post.likes + (likedPosts.has(post.id) ? 1 : 0)}
                             </span>
                           </button>
                           
-                          <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-600 transition-all duration-200 hover:scale-110">
+                          <button className="flex items-center space-x-1 text-gray-500 hover:text-blue-600">
                             <MessageCircle className="w-5 h-5" />
-                            <span className="font-bold text-base">{post.comments}</span>
+                            <span className="font-medium text-sm">{post.comments}</span>
                           </button>
                           
-                          <button className="flex items-center space-x-2 text-gray-500 hover:text-green-600 transition-all duration-200 hover:scale-110">
+                          <button className="flex items-center space-x-1 text-gray-500 hover:text-green-600">
                             <Share2 className="w-5 h-5" />
-                            <span className="font-bold text-base">{post.shares}</span>
+                            <span className="font-medium text-sm">{post.shares}</span>
                           </button>
                         </div>
                         
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center space-x-2">
-                            <div className={`w-3 h-3 rounded-full ${post.engagement > 90 ? 'bg-green-500' : post.engagement > 75 ? 'bg-yellow-500' : 'bg-red-500'}`} />
-                            <span className="text-sm font-medium text-gray-600">{post.engagement}% engagement</span>
-                          </div>
-                          <button className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1 transition-colors">
-                            <span>View details</span>
-                            <ChevronRight className="w-3 h-3" />
-                          </button>
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            post.engagement > 90 ? 'bg-green-500' : post.engagement > 75 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`} />
+                          <span className="text-xs text-gray-500 hidden sm:inline">{post.engagement}% engagement</span>
                         </div>
                       </div>
                     </div>
@@ -612,56 +573,58 @@ const SocialApp = () => {
                 );
               })}
             </div>
-          </div>
+          </main>
 
-          {/* Right Sidebar */}
-          <div className="hidden xl:block w-80 shrink-0">
-            <div className="sticky top-24 space-y-6">
+          {/* Right Sidebar - Desktop */}
+          <aside className="hidden lg:block w-80 shrink-0">
+            <div className="sticky top-6 space-y-6 p-4">
               {/* Trending Communities */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/30 shadow-lg shadow-gray-200/20">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="font-bold text-lg text-gray-900">Trending Communities</h3>
-                  <Filter className="w-4 h-4 text-gray-400" />
+              <div className="bg-white/90 backdrop-blur-xl rounded-xl p-5 border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-gray-900">Trending Communities</h3>
+                  <button className="text-gray-400 hover:text-gray-600">
+                    <Filter className="w-4 h-4" />
+                  </button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {[
                     { name: 'Mumbai Food Lovers', members: '12.3K', growth: '+15%', avatar: '🍛' },
                     { name: 'Delhi Tech Hub', members: '8.7K', growth: '+22%', avatar: '💻' },
                     { name: 'Bangalore Startups', members: '15.2K', growth: '+8%', avatar: '🚀' },
                     { name: 'Chennai Artists', members: '5.4K', growth: '+31%', avatar: '🎨' }
                   ].map((community, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50/80 rounded-xl transition-colors cursor-pointer">
+                    <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl flex items-center justify-center text-lg">
+                        <div className="w-9 h-9 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg flex items-center justify-center text-lg">
                           {community.avatar}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900 text-sm">{community.name}</p>
+                          <p className="font-medium text-gray-900 text-sm">{community.name}</p>
                           <p className="text-xs text-gray-500">{community.members} members</p>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                      <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                         {community.growth}
                       </span>
                     </div>
                   ))}
                 </div>
-                <button className="w-full mt-4 text-blue-600 hover:text-blue-700 font-medium text-sm py-2 hover:bg-blue-50 rounded-lg transition-colors">
-                  Explore All Communities
+                <button className="w-full mt-3 text-blue-600 hover:text-blue-700 font-medium text-sm py-2 hover:bg-blue-50 rounded-lg transition-colors">
+                  Explore All
                 </button>
               </div>
 
               {/* Upcoming Events */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/30 shadow-lg shadow-gray-200/20">
-                <h3 className="font-bold text-lg text-gray-900 mb-5">Upcoming Events</h3>
-                <div className="space-y-4">
+              <div className="bg-white/90 backdrop-blur-xl rounded-xl p-5 border border-gray-200 shadow-sm">
+                <h3 className="font-bold text-gray-900 mb-4">Upcoming Events</h3>
+                <div className="space-y-3">
                   {[
                     { title: 'Tech Meetup 2024', date: 'Dec 16', time: '6:00 PM', location: 'Cyber Hub, Gurgaon', attendees: 124 },
                     { title: 'Art Gallery Opening', date: 'Dec 18', time: '7:30 PM', location: 'MG Road, Bangalore', attendees: 89 },
                     { title: 'Food Festival', date: 'Dec 20', time: '12:00 PM', location: 'Connaught Place, Delhi', attendees: 256 }
                   ].map((event, index) => (
-                    <div key={index} className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
-                      <h4 className="font-semibold text-gray-900 text-sm mb-2">{event.title}</h4>
+                    <div key={index} className="border border-gray-100 rounded-lg p-3 hover:shadow-sm transition-shadow cursor-pointer">
+                      <h4 className="font-medium text-gray-900 text-sm mb-2">{event.title}</h4>
                       <div className="space-y-1 text-xs text-gray-500">
                         <div className="flex items-center space-x-2">
                           <Calendar className="w-3 h-3" />
@@ -672,54 +635,51 @@ const SocialApp = () => {
                           <span>{event.location}</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Users className="w-3 h-3" />
+                          <UsersIcon className="w-3 h-3" />
                           <span>{event.attendees} attending</span>
                         </div>
                       </div>
-                      <button className="w-full mt-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-2 rounded-lg text-xs font-medium hover:from-blue-700 hover:to-cyan-700 transition-all duration-200">
+                      <button className="w-full mt-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-1.5 rounded-lg text-xs font-medium hover:from-blue-700 hover:to-cyan-700 transition-all">
                         Join Event
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Community Stats */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/30 shadow-lg shadow-gray-200/20">
-                <h3 className="font-bold text-lg text-gray-900 mb-5">Your Impact</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Posts this month</span>
-                    <span className="font-bold text-blue-600">23</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Communities joined</span>
-                    <span className="font-bold text-purple-600">12</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Events attended</span>
-                    <span className="font-bold text-green-600">8</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Impact score</span>
-                    <span className="font-bold text-orange-600">847</span>
-                  </div>
-                </div>
-                <div className="mt-5 pt-5 border-t border-gray-100">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">Level 5</p>
-                    <p className="text-sm text-gray-500 mb-3">Community Explorer</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 h-2 rounded-full" style={{width: '73%'}}></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">267/400 XP to next level</p>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="flex justify-around items-center">
+          {[
+            { icon: Home, label: 'Feed' },
+            { icon: Compass, label: 'Explore' },
+            { icon: Plus, label: 'Create' },
+            { icon: UsersIcon, label: 'Communities' },
+            { icon: User, label: 'Profile' }
+          ].map(({ icon: Icon, label }) => (
+            <button
+              key={label}
+              onClick={() => {
+                if (label === 'Create') {
+                  setShowNewPost(true);
+                } else {
+                  setActiveTab(label);
+                }
+              }}
+              className={`flex flex-col items-center justify-center py-3 px-4 w-full ${
+                activeTab === label ? 'text-blue-600' : 'text-gray-500'
+              }`}
+            >
+              <Icon className="w-6 h-6" />
+              <span className="text-xs mt-1">{label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 };

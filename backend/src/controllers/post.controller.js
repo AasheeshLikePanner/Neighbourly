@@ -298,4 +298,5 @@ export {
     AddCommentInPost,
     getPosts,
     getAllCommentOfPost,
+    getPost
 }

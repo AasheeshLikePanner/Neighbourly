@@ -1,210 +1,501 @@
-import { useState, useEffect } from 'react';
-import { 
-  MapPin, Lock, Shield, Eye, EyeOff, Github, 
-  Users, Calendar, HelpCircle, Star, Compass 
+import { useState, useEffect, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import {
+  MapPin, Lock, Shield, Eye, EyeOff, Github,
+  Users, Calendar, HelpCircle, Star, Compass, AlertCircle, Upload, User
 } from 'lucide-react';
+import { loginUser, signUpUser } from '../apis/apis';
+import useStore from '../store/store'
 
 const AuthPage = () => {
   const [activeTab, setActiveTab] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
   const [locationAllowed, setLocationAllowed] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const fileInputRef = useRef(null);
+  const { user, setUser } = useStore()
+  // Register form
+  const { register: registerRegister, handleSubmit: handleRegisterSubmit, formState: { errors: registerErrors }, reset: resetRegister } = useForm();
 
-  // Toggle dark mode based on system preference
+  // Login form
+  const { register: registerLogin, handleSubmit: handleLoginSubmit, formState: { errors: loginErrors } } = useForm();
+
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    setIsDarkMode(mediaQuery.matches);
-    
-    const handler = (e) => setIsDarkMode(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
+    console.log('Initial file input ref:', fileInputRef.current);
+  }, []);
+  // Check location permission on mount
+  useEffect(() => {
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        if (result.state === 'granted') {
+          setLocationAllowed(true);
+        }
+      });
+    }
   }, []);
 
-  // Design tokens
-  const colors = {
-    light: {
-      primary: '#2563eb',
-      background: '#f8fafc',
-      card: 'rgba(255, 255, 255, 0.9)',
-      text: '#1e293b',
-      muted: '#64748b'
-    },
-    dark: {
-      primary: '#3b82f6',
-      background: '#0f172a',
-      card: 'rgba(15, 23, 42, 0.8)',
-      text: '#f8fafc',
-      muted: '#94a3b8'
+  const handleLocationRequest = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setLocationAllowed(true);
+        setLocationError(null);
+      },
+      (error) => {
+        setLocationError('Location access is required to continue');
+        setLocationAllowed(false);
+      }
+    );
+  };
+
+  const handleAvatarChange = (e) => {
+    console.log('File input change triggered');
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        alert('File size must be less than 2MB');
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = () => {  // Changed from onloadend to onload
+        console.log('File read complete, setting preview');
+        setAvatarPreview(reader.result);
+      };
+
+      // Add error handling
+      reader.onerror = () => {
+        console.error('Error reading file');
+        setAvatarPreview(null);
+      };
+
+      // Start reading the file
+      reader.readAsDataURL(file);
+    } else {
+      console.log('No file selected');
+      setAvatarPreview(null);
     }
   };
 
-  const currentColors = isDarkMode ? colors.dark : colors.light;
+  const triggerFileInput = (e) => {
+    if (e) e.preventDefault(); // Prevent default only if event exists
+    console.log('Trigger file input clicked');
+    if (fileInputRef.current) {
+      console.log('Clicking file input');
+      fileInputRef.current.click();
+    } else {
+      console.error('File input reference not found');
+    }
+  };
+
+  const onRegisterSubmit = async (data) => {
+    console.log(data);
+
+    if (!locationAllowed) {
+      setLocationError('Please allow location access to continue');
+      return;
+    }
+
+    // Prepare FormData for API submission
+    const submissionData = new FormData();
+    submissionData.append('username', data.username);
+    submissionData.append('email', data.email);
+    submissionData.append('password', data.password);
+    submissionData.append('fullName', data.fullName);
+
+    if (data.avatar && data.avatar[0]) {
+      submissionData.append('avatar', data.avatar[0]);
+    }
+    for (let pair of submissionData.entries()) {
+      console.log(pair[0] + ':', pair[1]);
+    }
+
+
+    try {
+      const response = await signUpUser(submissionData);
+      console.log(response.data.data);
+      setUser(response.data.data);
+    } catch (error) {
+      console.error('Registration error:', error);
+      // Handle error (show error message, etc.)
+    }
+  };
+
+  const onLoginSubmit = async (data) => {
+    if (!locationAllowed) {
+      setLocationError('Please allow location access to continue');
+      return;
+    }
+
+    try {
+      // const response = await fetch('https://your-api-endpoint.com/login', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     email: data.email,
+      //     password: data.password,
+      //   }),
+      // });
+      const response = await loginUser(data);
+      console.log(response.data);
+
+      setUser(response.data.user);
+      // Handle success (redirect, store token, etc.)
+    } catch (error) {
+      console.error('Login error:', error);
+      // Handle error (show error message, etc.)
+    }
+  };
 
   return (
-    <div className={`min-h-screen flex flex-col md:flex-row transition-colors duration-300 ${isDarkMode ? 'dark' : ''}`}
-      style={{ backgroundColor: currentColors.background }}>
-      
+    <div className="min-h-screen flex flex-col md:flex-row bg-white">
       {/* Left Side - Authentication Form */}
       <div className="w-full md:w-1/2 p-8 flex items-center justify-center">
         <div className="w-full max-w-md">
           {/* Auth Tabs */}
-          <div className="flex mb-8 rounded-xl p-1 bg-gray-100 dark:bg-slate-800">
+          <div className="flex mb-8 rounded-xl p-1 bg-gray-100">
             <button
               onClick={() => setActiveTab('login')}
-              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'login' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'text-gray-500 dark:text-slate-400'}`}
+              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'login' ? 'bg-white shadow-sm' : 'text-gray-500'
+                }`}
             >
               Login
             </button>
             <button
               onClick={() => setActiveTab('register')}
-              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'register' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'text-gray-500 dark:text-slate-400'}`}
+              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'register' ? 'bg-white shadow-sm' : 'text-gray-500'
+                }`}
             >
               Register
             </button>
           </div>
 
-          {/* Auth Form */}
-          <div className="backdrop-blur-sm bg-white/80 dark:bg-slate-800/80 rounded-2xl p-8 shadow-xl border border-gray-100 dark:border-slate-700/50">
-            <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-              {activeTab === 'login' ? 'Welcome back' : 'Join your community'}
-            </h1>
+          {/* Register Form */}
+          {activeTab === 'register' && (
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+              <h1 className="text-2xl font-bold mb-6 text-gray-900">Join your community</h1>
 
-            <form className="space-y-4">
-              {activeTab === 'register' && (
+              <form onSubmit={handleRegisterSubmit(onRegisterSubmit)} className="space-y-4">
+                {/* Avatar Upload */}
+                <div className="flex flex-col items-center mb-4">
+                  <div
+                    onClick={triggerFileInput}
+                    className="w-20 h-20 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer overflow-hidden hover:border-blue-400 transition-colors relative"
+                  >
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={32} className="text-gray-400" />
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    name="avatar"
+                    ref={(e) => {
+                      fileInputRef.current = e;
+                      registerRegister('avatar').ref(e);
+                    }}
+                    onChange={(e) => {
+                      registerRegister('avatar').onChange(e); // forward to RHF
+                      handleAvatarChange(e); // custom preview logic
+                    }}
+                    accept="image/*"
+                    className="hidden"
+                  />
+
+
+                  <button
+                    type="button"
+                    onClick={triggerFileInput}
+                    className="mt-2 flex items-center justify-center space-x-1 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    <Upload size={14} />
+                    <span>Upload Avatar</span>
+                  </button>
+                  <p className="text-xs text-gray-500 mt-1">Optional (Max 2MB)</p>
+                </div>
+
+                {/* Username Field */}
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
+                  <label className="block text-sm font-medium mb-1 text-gray-700">
                     Username
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-white/50 dark:bg-slate-700/50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className={`w-full px-4 py-3 rounded-xl border ${registerErrors.username ? 'border-red-500' : 'border-gray-200'
+                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                     placeholder="yourname"
+                    {...registerRegister('username', { required: 'Username is required' })}
                   />
+                  {registerErrors.username && (
+                    <p className="mt-1 text-sm text-red-600">{registerErrors.username.message}</p>
+                  )}
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-white/50 dark:bg-slate-700/50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="you@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
-                  Password
-                </label>
-                <div className="relative">
+                {/* Full Name Field */}
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">
+                    Full Name
+                  </label>
                   <input
-                    type={showPassword ? "text" : "password"}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-white/50 dark:bg-slate-700/50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
-                    placeholder="••••••••"
+                    type="text"
+                    className={`w-full px-4 py-3 rounded-xl border ${registerErrors.fullName ? 'border-red-500' : 'border-gray-200'
+                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                    placeholder="Full Name"
+                    {...registerRegister('fullName', { required: 'Full name is required' })}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
+                  {registerErrors.fullName && (
+                    <p className="mt-1 text-sm text-red-600">{registerErrors.fullName.message}</p>
+                  )}
                 </div>
-              </div>
 
-              {activeTab === 'login' && (
+                {/* Email Field */}
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    className={`w-full px-4 py-3 rounded-xl border ${registerErrors.email ? 'border-red-500' : 'border-gray-200'
+                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                    placeholder="you@example.com"
+                    {...registerRegister('email', {
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Invalid email address'
+                      }
+                    })}
+                  />
+                  {registerErrors.email && (
+                    <p className="mt-1 text-sm text-red-600">{registerErrors.email.message}</p>
+                  )}
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className={`w-full px-4 py-3 rounded-xl border ${registerErrors.password ? 'border-red-500' : 'border-gray-200'
+                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12`}
+                      placeholder="••••••••"
+                      {...registerRegister('password', {
+                        required: 'Password is required',
+                        minLength: {
+                          value: 8,
+                          message: 'Password must be at least 8 characters'
+                        }
+                      })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {registerErrors.password && (
+                    <p className="mt-1 text-sm text-red-600">{registerErrors.password.message}</p>
+                  )}
+                </div>
+
+                {/* Location Access */}
+                <div className="pt-4">
+                  <div className="flex items-start space-x-3">
+                    <button
+                      type="button"
+                      onClick={handleLocationRequest}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${locationAllowed ? 'bg-green-50 text-green-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      <MapPin size={16} />
+                      <span>{locationAllowed ? 'Location Allowed' : 'Allow Location Access'}</span>
+                    </button>
+                    <div className="relative group">
+                      <HelpCircle size={18} className="text-gray-400 mt-1" />
+                      <div className="absolute left-full ml-2 w-64 p-3 bg-white rounded-lg shadow-lg text-xs text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-gray-100">
+                        We only use your location to personalize your feed. We do not store or track it.
+                      </div>
+                    </div>
+                  </div>
+                  {locationError && (
+                    <div className="mt-2 flex items-center text-sm text-red-600">
+                      <AlertCircle size={16} className="mr-1" />
+                      {locationError}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!locationAllowed}
+                  className={`w-full py-3.5 px-4 text-white font-medium rounded-xl shadow-md transition-all flex items-center justify-center ${locationAllowed
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-[1.02] active:scale-95'
+                    : 'bg-gray-400 cursor-not-allowed'
+                    }`}
+                >
+                  <span>Create account</span>
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Login Form */}
+          {activeTab === 'login' && (
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+              <h1 className="text-2xl font-bold mb-6 text-gray-900">Welcome back</h1>
+
+              <form onSubmit={handleLoginSubmit(onLoginSubmit)} className="space-y-4">
+                {/* Email Field */}
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    className={`w-full px-4 py-3 rounded-xl border ${loginErrors.email ? 'border-red-500' : 'border-gray-200'
+                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                    placeholder="you@example.com"
+                    {...registerLogin('email', {
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Invalid email address'
+                      }
+                    })}
+                  />
+                  {loginErrors.email && (
+                    <p className="mt-1 text-sm text-red-600">{loginErrors.email.message}</p>
+                  )}
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className={`w-full px-4 py-3 rounded-xl border ${loginErrors.password ? 'border-red-500' : 'border-gray-200'
+                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12`}
+                      placeholder="••••••••"
+                      {...registerLogin('password', {
+                        required: 'Password is required',
+                        minLength: {
+                          value: 8,
+                          message: 'Password must be at least 8 characters'
+                        }
+                      })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {loginErrors.password && (
+                    <p className="mt-1 text-sm text-red-600">{loginErrors.password.message}</p>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between">
                   <label className="flex items-center">
                     <input
                       type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      {...registerLogin('rememberMe')}
                     />
-                    <span className="ml-2 text-sm text-gray-600 dark:text-slate-400">
+                    <span className="ml-2 text-sm text-gray-600">
                       Remember me
                     </span>
                   </label>
-                  <a href="#" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
+                  <a href="#" className="text-sm text-blue-600 hover:underline">
                     Forgot password?
                   </a>
                 </div>
-              )}
 
-              <button
-                type="submit"
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-md transition-all duration-300 transform hover:scale-[1.02]"
-              >
-                {activeTab === 'login' ? 'Login' : 'Create account'}
-              </button>
-            </form>
-
-            {/* Location Access */}
-            <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700/50">
-              <div className="flex items-start space-x-3">
-                <button
-                  onClick={() => setLocationAllowed(!locationAllowed)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${locationAllowed ? 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300'}`}
-                >
-                  <MapPin size={16} />
-                  <span>{locationAllowed ? 'Location Allowed' : 'Allow Location Access'}</span>
-                </button>
-                <div className="relative group">
-                  <HelpCircle size={18} className="text-gray-400 dark:text-slate-500 mt-1" />
-                  <div className="absolute left-full ml-2 w-64 p-3 bg-white dark:bg-slate-800 rounded-lg shadow-lg text-xs text-gray-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-gray-100 dark:border-slate-700">
-                    We only use your location to personalize your feed. We do not store or track it.
+                {/* Location Access */}
+                <div className="pt-4">
+                  <div className="flex items-start space-x-3">
+                    <button
+                      type="button"
+                      onClick={handleLocationRequest}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${locationAllowed ? 'bg-green-50 text-green-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      <MapPin size={16} />
+                      <span>{locationAllowed ? 'Location Allowed' : 'Allow Location Access'}</span>
+                    </button>
+                    <div className="relative group">
+                      <HelpCircle size={18} className="text-gray-400 mt-1" />
+                      <div className="absolute left-full ml-2 w-64 p-3 bg-white rounded-lg shadow-lg text-xs text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-gray-100">
+                        We only use your location to personalize your feed. We do not store or track it.
+                      </div>
+                    </div>
                   </div>
+                  {locationError && (
+                    <div className="mt-2 flex items-center text-sm text-red-600">
+                      <AlertCircle size={16} className="mr-1" />
+                      {locationError}
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
 
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200 dark:border-slate-700"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400">
-                  Or continue with
-                </span>
-              </div>
+                <button
+                  type="submit"
+                  disabled={!locationAllowed}
+                  className={`w-full py-3.5 px-4 text-white font-medium rounded-xl shadow-md transition-all flex items-center justify-center ${locationAllowed
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-[1.02] active:scale-95'
+                    : 'bg-gray-400 cursor-not-allowed'
+                    }`}
+                >
+                  <span>Login</span>
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </button>
+              </form>
             </div>
-
-            {/* OAuth */}
-            <div className="grid grid-cols-2 gap-3">
-              <button className="flex items-center justify-center space-x-2 py-2 px-4 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 20a10 10 0 1 1 0-20 10 10 0 0 1 0 20zM7 8v2h3.5v2H7v2h4a4 4 0 1 0 0-8H7z" />
-                </svg>
-                <span>Google</span>
-              </button>
-              <button className="flex items-center justify-center space-x-2 py-2 px-4 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 0a10 10 0 0 1 10 10c0 4.42-2.87 8.17-6.84 9.5-.5.08-.66-.23-.66-.5v-1.7c0-.84-.3-1.39-.6-1.67 2.03-.22 4.16-.99 4.16-4.45 0-.98-.35-1.78-.92-2.4.09-.23.4-1.14-.09-2.38 0 0-.75-.24-2.45.92-.72-.2-1.48-.3-2.25-.3-.77 0-1.53.1-2.25.3-1.7-1.16-2.45-.92-2.45-.92-.49 1.24-.18 2.15-.09 2.38-.57.62-.92 1.42-.92 2.4 0 3.46 2.13 4.23 4.16 4.45-.26.21-.5.63-.5 1.27v1.89c0 .27-.16.59-.67.5C2.87 18.17 0 14.42 0 10A10 10 0 0 1 10 0z" />
-                </svg>
-                <span>GitHub</span>
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Right Side - Platform Message & Trust */}
-      <div className="w-full md:w-1/2 p-8 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
+      <div className="w-full md:w-1/2 p-8 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="max-w-md">
           <div className="mb-8">
             <div className="flex items-center mb-4">
               <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center mr-3">
                 <Users className="text-white" size={20} />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-2xl font-bold text-gray-900">
                 LocalConnect
               </h2>
             </div>
-            <p className="text-lg text-gray-700 dark:text-slate-300 mb-6">
+            <p className="text-lg text-gray-700 mb-6">
               Built to help locals connect, share updates, ask for help, and discover events in their area.
             </p>
-            <p className="text-gray-600 dark:text-slate-400">
+            <p className="text-gray-600">
               Focused on Indian states and communities.
             </p>
           </div>
@@ -217,19 +508,19 @@ const AuthPage = () => {
               { icon: <Star size={20} />, title: "Recommendations", desc: "Get local suggestions" },
               { icon: <Shield size={20} />, title: "Safety", desc: "Verified community members" }
             ].map((feature, index) => (
-              <div key={index} className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl backdrop-blur-sm border border-gray-100 dark:border-slate-700/50">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mb-2 text-blue-600 dark:text-blue-400">
+              <div key={index} className="bg-white/80 p-4 rounded-xl border border-gray-100">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mb-2 text-blue-600">
                   {feature.icon}
                 </div>
-                <h3 className="font-medium text-gray-900 dark:text-white">{feature.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-slate-400">{feature.desc}</p>
+                <h3 className="font-medium text-gray-900">{feature.title}</h3>
+                <p className="text-sm text-gray-600">{feature.desc}</p>
               </div>
             ))}
           </div>
 
           {/* Privacy Assurance */}
-          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-100 dark:border-slate-700/50">
-            <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white flex items-center">
+          <div className="bg-white/90 rounded-2xl p-6 border border-gray-100">
+            <h3 className="font-bold text-lg mb-4 text-gray-900 flex items-center">
               <Lock className="mr-2" size={18} /> Privacy Assurance
             </h3>
             <ul className="space-y-3">
@@ -240,16 +531,16 @@ const AuthPage = () => {
                 "No surveillance, no profiling, just authentic community"
               ].map((item, index) => (
                 <li key={index} className="flex items-start">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 flex items-center justify-center mr-2 mt-0.5">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-2 mt-0.5">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
                   </span>
-                  <span className="text-gray-700 dark:text-slate-300">{item}</span>
+                  <span className="text-gray-700">{item}</span>
                 </li>
               ))}
             </ul>
-            <div className="mt-4 flex items-center text-sm text-gray-500 dark:text-slate-500">
+            <div className="mt-4 flex items-center text-sm text-gray-500">
               <Github className="mr-2" size={16} />
               <a href="#" className="hover:underline">View our source code</a>
             </div>
