@@ -1,32 +1,40 @@
-import mongoose, {Schema} from 'mongoose'
+import mongoose, { Schema } from 'mongoose'
 
 const postSchema = new Schema({
-    image:{
-        type:String,
-        required:true,
+    image: {
+        type: String,
+        required: true,
     },
-    owner:{
-        type:Schema.Types.ObjectId,
-        ref:'User'
+    owner: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
     },
-    content:{
-        type:String,
-        trim:true,
+    content: {
+        type: String,
+        trim: true,
         maxLength: 280,
     },
-    type:{
-        type:String,
-        required:true,
+    type: {
+        type: String,
+        required: true,
         enum: ['Ask for help', 'Recommend a place', 'Share a local update', 'Event announcement'],
     },
-    state:{
-        type:String,
-        required:true
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            required: true,
+        },
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            required: true,
+        },
     },
-    comment:[
+
+    comment: [
         {
-            type:Schema.Types.ObjectId,
-            ref:'Comment'
+            type: Schema.Types.ObjectId,
+            ref: 'Comment'
         }
     ],
     likeCount: {
@@ -34,7 +42,7 @@ const postSchema = new Schema({
         default: 0
     }
 
-},{timestamps:true})
+}, { timestamps: true })
 
 
 
