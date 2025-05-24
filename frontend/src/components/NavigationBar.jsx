@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Search, Bell, Plus, Home, User, Compass, Bookmark, MapPin, TrendingUp, Sparkles, Globe, Users, Calendar, Image, Smile, Send, ChevronRight, Filter, Zap, Menu } from 'lucide-react';
 import designSystem from '../utils/designSystem'
 
-const NavigationBar = (setShowNewPost, setMobileMenuOpen, showNewPost, mobileMenuOpen) => {
+const NavigationBar = ({setShowNewPost, setMobileMenuOpen, showNewPost, mobileMenuOpen}) => {
 
     return (
         <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg shadow-gray-200/20">

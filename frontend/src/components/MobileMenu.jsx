@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Search, Bell, Plus, Home, User, Compass, Bookmark, MapPin, TrendingUp, Sparkles, Globe, Users, Calendar, Image, Smile, Send, ChevronRight, Filter, Zap, Menu } from 'lucide-react';
 import designSystem from '../utils/designSystem'
 
-const MobileMenu = (setMobileMenuOpen) => {
+const MobileMenu = ({setMobileMenuOpen}) => {
 
     return (
         <div className="lg:hidden fixed inset-0 z-40 bg-white/95 backdrop-blur-xl p-6 overflow-y-auto">

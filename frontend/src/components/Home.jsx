@@ -185,7 +185,7 @@ const SocialApp = () => {
 
             {/* Create Post */}
             {showNewPost && (
-              <CreatePost setNewPostContent={setNewPostContent}/>
+              <CreatePost setNewPostContent={setNewPostContent} newPostContent={newPostContent}/>
             )}
 
             {/* Posts Feed */}
