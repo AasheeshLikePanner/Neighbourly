@@ -7,10 +7,10 @@ import { ApiError } from '../utils/ApiError.js'
 import mongoose from 'mongoose'
 
 const likeItem = asyncHandler(async (req, res) => {
-    const { userId, itemId, itemType } = req.body;
-    console.log(userId, itemId, itemType);
+    const { itemId, itemType } = req.body;
+    console.log( itemId, itemType);
     try {
-        const like = await Like.create({ user: userId, item: itemId, itemType });
+        const like = await Like.create({ user: req.user._id, item: itemId, itemType });
 
         let updatedItem;
 
@@ -42,8 +42,8 @@ const likeItem = asyncHandler(async (req, res) => {
 });
 
 const unLikeItem = asyncHandler(async (req, res) => {
-    const { userId, itemId, itemType } = req.body;
-    const result = await Like.findOneAndDelete({ user: userId, item: itemId, itemType });
+    const { itemId, itemType } = req.body;
+    const result = await Like.findOneAndDelete({ user: req.user._id, item: itemId, itemType });
 
     if (result) {
         if (itemType === 'Comment') {

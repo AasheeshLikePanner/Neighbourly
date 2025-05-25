@@ -13,7 +13,7 @@ import RightSide from './RightSide';
 import MobileBottomNavigation from './MobileBottomNavigation';
 import useStore from '../store/store';
 import { getAllPost } from '../apis/post.api';
-import { getUserLikes } from '../apis/like.api';
+import { getUserLikes, likePost, unlikePost } from '../apis/like.api';
 
 const SocialApp = () => {
   const [activeFilter, setActiveFilter] = useState('Nearby');
@@ -32,7 +32,9 @@ const SocialApp = () => {
     const fetchUserLikes = async () => {
       if (user?._id) {
         try {
-          const likes = await getUserLikes(user._id);
+          const likes = await getUserLikes(user._id, 'Post');
+          console.log(likes);
+
           const postLikes = likes.filter(like => like.itemType === 'Post');
           setLikedPosts(new Set(postLikes.map(like => like.item.toString())));
         } catch (error) {
@@ -71,9 +73,9 @@ const SocialApp = () => {
           maximumAge: 0
         });
       });
-      return { 
-        latitude: position.coords.latitude, 
-        longitude: position.coords.longitude 
+      return {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
       };
     } catch (error) {
       console.error('Error getting location:', error);
@@ -89,20 +91,23 @@ const SocialApp = () => {
   ];
 
   const handleLike = async (postId) => {
-    try {
-      setLikedPosts(prev => {
-        const newLiked = new Set(prev);
-        if (newLiked.has(postId)) {
-          newLiked.delete(postId);
-        } else {
-          newLiked.add(postId);
-        }
-        return newLiked;
-      });
-      // TODO: Implement API call to like/unlike
-    } catch (error) {
-      console.error('Error handling like:', error);
-      setLikedPosts(prev => new Set(prev)); // Revert on error
+    setLikedPosts(prev => {
+      const newLiked = new Set(prev);
+      if (newLiked.has(postId)) {
+        newLiked.delete(postId);
+      } else {
+        newLiked.add(postId);
+      }
+      return newLiked;
+    });
+
+    if (likedPosts.has(postId)) {
+      console.log('unlinking')
+      await unlikePost(postId);
+    } else {
+      console.log('liking')
+
+      await likePost(postId);
     }
   };
 
@@ -142,12 +147,12 @@ const SocialApp = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${designSystem.gradients.background} relative overflow-hidden`}>
-      <NavigationBar 
-        user={user} 
-        setShowNewPost={setShowNewPost} 
-        setMobileMenuOpen={setMobileMenuOpen} 
-        showNewPost={showNewPost} 
-        mobileMenuOpen={mobileMenuOpen} 
+      <NavigationBar
+        user={user}
+        setShowNewPost={setShowNewPost}
+        setMobileMenuOpen={setMobileMenuOpen}
+        showNewPost={showNewPost}
+        mobileMenuOpen={mobileMenuOpen}
       />
 
       {mobileMenuOpen && <MobileMenu setMobileMenuOpen={setMobileMenuOpen} />}
@@ -161,9 +166,9 @@ const SocialApp = () => {
             <FilterBar setActiveFilter={setActiveFilter} activeFilter={activeFilter} filters={filters} />
 
             {showNewPost && (
-              <CreatePost 
-                setNewPostContent={setNewPostContent} 
-                newPostContent={newPostContent} 
+              <CreatePost
+                setNewPostContent={setNewPostContent}
+                newPostContent={newPostContent}
               />
             )}
 

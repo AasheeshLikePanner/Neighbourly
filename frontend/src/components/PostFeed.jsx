@@ -139,7 +139,7 @@ const PostFeed = ({ getTypeConfig, posts = [], handleLike, likedPosts, isLoading
                 <div className="flex items-center space-x-6">
                   <button
                     onClick={(e) => {
-                      e.stopPropagation();
+                      // e.stopPropagation();
                       handleLike(post._id);
                     }}
                     className={`flex items-center space-x-2 transition-all duration-200 hover:scale-110 ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
@@ -148,7 +148,7 @@ const PostFeed = ({ getTypeConfig, posts = [], handleLike, likedPosts, isLoading
                       className={`w-5 h-5 transition-all duration-200 ${isLiked ? 'fill-red-500 text-red-500 scale-110' : ''}`}
                     />
                     <span className="font-bold text-base">
-                      {post.likeCount + (isLiked ? 1 : 0)}
+                      {post.likeCount}
                     </span>
                   </button>
 

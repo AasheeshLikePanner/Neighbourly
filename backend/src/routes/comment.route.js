@@ -4,7 +4,7 @@ import { verifyJWT } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.route('/create-comment').post(verifyJWT , createComment);
+router.route('/create').post(verifyJWT , createComment);
 
 router.route('/add-comment').post(verifyJWT ,addCommentInComment)
 

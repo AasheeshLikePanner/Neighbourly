@@ -39,9 +39,19 @@ export const getAllPost = async (filter) => {
 export const getPostById = async (postId) => {
     try {
         const response = await axios.post(apiPrefix + '/posts/post', {postId});
-        console.log(response.data);
+        console.log(response.data.data);
         return response.data.data
     } catch (error) {
        throw error; 
+    }
+}
+
+export const getUserPosts = async (username) => {
+    try {
+        const response = await axios.post(apiPrefix + '/posts/user-posts', {username});
+        console.log(response.data.data)
+        return response.data.data;
+    } catch (error) {
+        throw error;
     }
 }

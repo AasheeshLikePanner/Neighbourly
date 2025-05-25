@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Heart, MessageCircle, Share2, X, Send, Bookmark, 
@@ -8,8 +8,9 @@ import designSystem from '../utils/designSystem';
 import formatTwitterDate from '../utils/dateUtils';
 import { Tooltip } from './Tooltip';
 import { getPostById } from '../apis/post.api';
-import { likePost, unlikePost } from '../apis/like.api';
+import { likePost, unlikePost, likeComment, unlikeComment } from '../apis/like.api';
 import useStore from '../store/store';
+import { addCommentInPost } from '../apis/comment.api';
 
 const PostDetail = () => {
   const { postId } = useParams();
@@ -17,10 +18,8 @@ const PostDetail = () => {
   const { user } = useStore();
   const [post, setPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLiked, setIsLiked] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
-  const [expandedComments, setExpandedComments] = useState(new Set());
   const [isImageOpen, setIsImageOpen] = useState(false);
   const [imageScale, setImageScale] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
@@ -28,14 +27,17 @@ const PostDetail = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const imageRef = useRef(null);
 
+  // Check if post or comment is liked
+  const isLiked = useCallback((likes = []) => {
+    return user?._id && likes.includes(user._id);
+  }, [user?._id]);
+
+  // Fetch post data
   useEffect(() => {
     const fetchPost = async () => {
       try {
         const data = await getPostById(postId);
         setPost(data);
-        if (user?._id && data.likes?.includes(user._id)) {
-          setIsLiked(true);
-        }
       } catch (error) {
         console.error('Error fetching post:', error);
       } finally {
@@ -43,51 +45,92 @@ const PostDetail = () => {
       }
     };
     fetchPost();
-  }, [postId, user]);
+  }, [postId]);
 
-  const handleLike = async () => {
+  // Handle post like
+  const handlePostLike = async () => {
     if (!user?._id) return;
     
     try {
-      const newLikeStatus = !isLiked;
-      setIsLiked(newLikeStatus);
+      const newLikeStatus = !isLiked(post.likes || []);
       
       if (newLikeStatus) {
         await likePost(postId, user._id);
-      }else{
-        await unlikePost(postId, user._id);        
+        setPost(prev => ({
+          ...prev,
+          likes: [...(prev.likes || []), user._id],
+          likeCount: prev.likeCount + 1
+        }));
+      } else {
+        await unlikePost(postId, user._id);
+        setPost(prev => ({
+          ...prev,
+          likes: prev.likes.filter(id => id !== user._id),
+          likeCount: prev.likeCount - 1
+        }));
       }
-      setPost(prev => ({
-        ...prev,
-        likeCount: newLikeStatus ? prev.likeCount + 1 : prev.likeCount - 1
-      }));
     } catch (error) {
       console.error('Error updating like:', error);
-      setIsLiked(!isLiked);
     }
   };
 
-  const handleCommentSubmit = (e) => {
+  // Handle comment like
+  const handleCommentLike = async (commentId, currentLikes = []) => {
+    if (!user?._id) return;
+    
+    try {
+      const newLikeStatus = !isLiked(currentLikes);
+      
+      if (newLikeStatus) {
+        await likeComment(commentId, user._id);
+      } else {
+        await unlikeComment(commentId, user._id);
+      }
+      
+      // Update the comment in the post state
+      setPost(prev => {
+        const updatedComments = prev.commentDetails.map(comment => {
+          if (comment._id === commentId) {
+            return {
+              ...comment,
+              likes: newLikeStatus 
+                ? [...(comment.likes || []), user._id]
+                : (comment.likes || []).filter(id => id !== user._id),
+              likeCount: newLikeStatus ? comment.likeCount + 1 : comment.likeCount - 1
+            };
+          }
+          return comment;
+        });
+        
+        return {
+          ...prev,
+          commentDetails: updatedComments
+        };
+      });
+    } catch (error) {
+      console.error('Error updating comment like:', error);
+    }
+  };
+
+  // Handle comment submission
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
     
-    console.log('Posting comment:', commentText);
-    setCommentText('');
-    setReplyingTo(null);
+    try {
+      const newComment = await addCommentInPost(postId, commentText.trim());
+      setPost(prev => ({
+        ...prev,
+        commentDetails: [newComment, ...prev.commentDetails]
+      }));
+      setCommentText('');
+      setReplyingTo(null);
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
   };
 
-  const toggleCommentExpand = (commentId) => {
-    setExpandedComments(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(commentId)) {
-        newSet.delete(commentId);
-      } else {
-        newSet.add(commentId);
-      }
-      return newSet;
-    });
-  };
-
+  // Image handlers
   const handleImageClick = () => {
     setIsImageOpen(true);
     setImageScale(1);
@@ -105,48 +148,6 @@ const PostDetail = () => {
     const delta = -e.deltaY;
     const newScale = Math.min(Math.max(0.5, imageScale + delta * 0.001), 3);
     setImageScale(newScale);
-  };
-
-  const handleTouchStart = (e) => {
-    if (e.touches.length === 2) {
-      // Handle pinch zoom
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const distance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-      );
-      setDragStart({ distance, scale: imageScale });
-    } else if (imageScale > 1) {
-      setIsDragging(true);
-      setDragStart({
-        x: e.touches[0].clientX - imagePosition.x,
-        y: e.touches[0].clientY - imagePosition.y
-      });
-    }
-  };
-
-  const handleTouchMove = (e) => {
-    if (e.touches.length === 2) {
-      // Handle pinch zoom
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const distance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-      );
-      const newScale = Math.min(Math.max(0.5, dragStart.scale * (distance / dragStart.distance)), 3);
-      setImageScale(newScale);
-    } else if (isDragging && imageScale > 1) {
-      setImagePosition({
-        x: e.touches[0].clientX - dragStart.x,
-        y: e.touches[0].clientY - dragStart.y
-      });
-    }
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
   };
 
   const handleMouseDown = (e) => {
@@ -211,7 +212,7 @@ const PostDetail = () => {
       {/* Image Modal */}
       {isImageOpen && post?.image && (
         <div 
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 touch-none"
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={handleCloseImage}
         >
           <div className="absolute top-4 right-4 z-10">
@@ -225,7 +226,7 @@ const PostDetail = () => {
           </div>
           <div className="absolute bottom-4 left-0 right-0 flex justify-center z-10">
             <div className="bg-black/50 text-white px-4 py-2 rounded-full text-sm">
-              {imageScale > 1 ? 'Pinch to zoom • Drag to pan' : 'Pinch to zoom'}
+              {imageScale > 1 ? 'Scroll to zoom • Drag to pan' : 'Scroll to zoom'}
             </div>
           </div>
           <div 
@@ -236,9 +237,6 @@ const PostDetail = () => {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
           >
             <img
               src={post.image}
@@ -297,10 +295,10 @@ const PostDetail = () => {
                 borderRadius: designSystem.borderRadius.full
               }}
             >
-              {post.userDetails[0].avatar ? (
+              {post.userDetails.avatar ? (
                 <img 
-                  src={post.userDetails[0].avatar} 
-                  alt={post.userDetails[0].username} 
+                  src={post.userDetails.avatar} 
+                  alt={post.userDetails.username} 
                   className="w-full h-full object-cover" 
                 />
               ) : (
@@ -316,13 +314,13 @@ const PostDetail = () => {
                   className="font-bold truncate text-sm md:text-base"
                   style={{ color: designSystem.colors.neutral.gray800 }}
                 >
-                  {post.userDetails[0].fullName}
+                  {post.userDetails.fullName}
                 </span>
                 <span 
                   className="text-xs md:text-sm truncate"
                   style={{ color: designSystem.colors.neutral.gray500 }}
                 >
-                  @{post.userDetails[0].username}
+                  @{post.userDetails.username}
                 </span>
               </div>
               <p 
@@ -369,7 +367,7 @@ const PostDetail = () => {
                     <Tooltip content={post.city}>
                       <div className="flex items-center space-x-1">
                         <MapPin className="w-3 h-3" />
-                        <span>{post.city}</span>
+                        <span>{post.city.split(',')[0]}</span>
                       </div>
                     </Tooltip>
                   </>
@@ -385,12 +383,12 @@ const PostDetail = () => {
           >
             <div className="flex items-center space-x-4 md:space-x-8">
               <button
-                onClick={handleLike}
-                className={`flex items-center space-x-1 transition-colors ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
-                style={{ color: isLiked ? designSystem.colors.secondary.red : designSystem.colors.neutral.gray500 }}
+                onClick={handlePostLike}
+                className={`flex items-center space-x-1 transition-colors ${isLiked(post.likes || []) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
+                style={{ color: isLiked(post.likes || []) ? designSystem.colors.secondary.red : designSystem.colors.neutral.gray500 }}
               >
                 <Heart 
-                  className={`w-4 h-4 md:w-5 md:h-5 ${isLiked ? 'fill-current' : ''}`} 
+                  className={`w-4 h-4 md:w-5 md:h-5 ${isLiked(post.likes || []) ? 'fill-current' : ''}`} 
                 />
                 <span className="text-xs md:text-sm">{post.likeCount}</span>
               </button>
@@ -399,7 +397,7 @@ const PostDetail = () => {
                 style={{ color: designSystem.colors.neutral.gray500 }}
               >
                 <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="text-xs md:text-sm">{post.comments?.length || 0}</span>
+                <span className="text-xs md:text-sm">{post.commentDetails?.length || 0}</span>
               </button>
               <button 
                 className="text-gray-500 hover:text-blue-500 transition-colors"
@@ -471,7 +469,7 @@ const PostDetail = () => {
                     color: commentText.trim() ? designSystem.colors.primary.blue : designSystem.colors.neutral.gray400
                   }}
                 >
-                  <Send className="w-4 h-4 md:w-5 md:h-5" />
+                  <Send className="w-4 h-4 md:w-5 md-h-5" />
                 </button>
               </div>
             </div>
@@ -479,8 +477,8 @@ const PostDetail = () => {
 
           {/* Comments List */}
           <div className="space-y-4 md:space-y-6">
-            {post.comments?.length > 0 ? (
-              post.comments.map(comment => (
+            {post.commentDetails?.length > 0 ? (
+              post.commentDetails.map(comment => (
                 <div key={comment._id} className="group">
                   <div className="flex items-start space-x-3">
                     <div 
@@ -490,8 +488,12 @@ const PostDetail = () => {
                         borderRadius: designSystem.borderRadius.full
                       }}
                     >
-                      {comment.user.avatar ? (
-                        <img src={comment.user.avatar} alt={comment.user.username} className="w-full h-full object-cover" />
+                      {comment.commentOwner.avatar ? (
+                        <img 
+                          src={comment.commentOwner.avatar} 
+                          alt={comment.commentOwner.username} 
+                          className="w-full h-full object-cover" 
+                        />
                       ) : (
                         <User 
                           className="w-full h-full p-1.5 md:p-2" 
@@ -513,123 +515,47 @@ const PostDetail = () => {
                               className="font-bold text-xs md:text-sm truncate"
                               style={{ color: designSystem.colors.neutral.gray800 }}
                             >
-                              {comment.user.fullName}
+                              {comment.commentOwner.fullName}
                             </span>
                             <span 
                               className="text-xs truncate"
                               style={{ color: designSystem.colors.neutral.gray500 }}
                             >
-                              @{comment.user.username}
+                              @{comment.commentOwner.username}
                             </span>
                           </div>
-                          <button 
-                            onClick={() => setReplyingTo(comment.user)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{ color: designSystem.colors.neutral.gray400 }}
-                          >
-                            <Reply className="w-3 h-3 md:w-4 md:h-4 hover:text-blue-600" />
-                          </button>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={() => handleCommentLike(comment._id, comment.likes || [])}
+                              className={`flex items-center space-x-1 ${isLiked(comment.likes || []) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+                            >
+                              <Heart 
+                                className={`w-3 h-3 md:w-4 md:h-4 ${isLiked(comment.likes || []) ? 'fill-current' : ''}`} 
+                              />
+                              <span className="text-xs">{comment.likeCount || 0}</span>
+                            </button>
+                            <button 
+                              onClick={() => setReplyingTo(comment.commentOwner)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              style={{ color: designSystem.colors.neutral.gray400 }}
+                            >
+                              <Reply className="w-3 h-3 md:w-4 md:h-4 hover:text-blue-600" />
+                            </button>
+                          </div>
                         </div>
                         <p 
                           className="text-xs md:text-sm"
                           style={{ color: designSystem.colors.neutral.gray700 }}
                         >
-                          {comment.text}
+                          {comment.content}
                         </p>
-                      </div>
-
-                      {/* Replies */}
-                      {comment.replies?.length > 0 && (
                         <div 
-                          className="mt-2 md:mt-3 ml-4 pl-4"
-                          style={{ 
-                            borderLeft: `2px solid ${designSystem.colors.neutral.gray200}`,
-                            borderRadius: designSystem.borderRadius.sm
-                          }}
+                          className="mt-2 text-xs"
+                          style={{ color: designSystem.colors.neutral.gray500 }}
                         >
-                          <button
-                            onClick={() => toggleCommentExpand(comment._id)}
-                            className="flex items-center text-xs mb-1 md:mb-2 transition-colors"
-                            style={{ color: designSystem.colors.primary.blue }}
-                          >
-                            {expandedComments.has(comment._id) ? (
-                              <>
-                                <ChevronUp className="w-3 h-3 mr-1" />
-                                Hide {comment.replies.length} replies
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="w-3 h-3 mr-1" />
-                                Show {comment.replies.length} replies
-                              </>
-                            )}
-                          </button>
-
-                          {expandedComments.has(comment._id) && (
-                            <div className="space-y-2 md:space-y-3">
-                              {comment.replies.map(reply => (
-                                <div key={reply._id} className="flex items-start space-x-2 md:space-x-3 group">
-                                  <div 
-                                    className="w-6 h-6 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0"
-                                    style={{ 
-                                      backgroundColor: designSystem.colors.neutral.gray200,
-                                      borderRadius: designSystem.borderRadius.full
-                                    }}
-                                  >
-                                    {reply.user.avatar ? (
-                                      <img src={reply.user.avatar} alt={reply.user.username} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <User 
-                                        className="w-full h-full p-1 md:p-1.5" 
-                                        style={{ color: designSystem.colors.neutral.gray400 }}
-                                      />
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div 
-                                      className="rounded-xl p-2 md:p-3 transition-colors"
-                                      style={{
-                                        backgroundColor: designSystem.colors.neutral.gray100,
-                                        borderRadius: designSystem.borderRadius.lg
-                                      }}
-                                    >
-                                      <div className="flex items-center justify-between mb-1">
-                                        <div className="flex items-center space-x-2">
-                                          <span 
-                                            className="font-bold text-xs truncate"
-                                            style={{ color: designSystem.colors.neutral.gray800 }}
-                                          >
-                                            {reply.user.fullName}
-                                          </span>
-                                          <span 
-                                            className="text-xs truncate"
-                                            style={{ color: designSystem.colors.neutral.gray500 }}
-                                          >
-                                            @{reply.user.username}
-                                          </span>
-                                        </div>
-                                        <button 
-                                          onClick={() => setReplyingTo(reply.user)}
-                                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                          style={{ color: designSystem.colors.neutral.gray400 }}
-                                        >
-                                          <Reply className="w-3 h-3 hover:text-blue-600" />
-                                        </button>
-                                      </div>
-                                      <p 
-                                        className="text-xs"
-                                        style={{ color: designSystem.colors.neutral.gray700 }}
-                                      >
-                                        {reply.text}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          {formatTwitterDate(comment.createdAt)}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>

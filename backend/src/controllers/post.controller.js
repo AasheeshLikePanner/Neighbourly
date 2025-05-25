@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
+import { User } from "../models/user.model.js";
 
 const createPost = asyncHandler(async (req, res) => {
 
@@ -47,25 +48,26 @@ const createPost = asyncHandler(async (req, res) => {
 });
 
 const AddCommentInPost = asyncHandler(async (req, res) => {
-    const { PostId, commentId } = req.body;
-
-    if (!PostId || !commentId) {
+    const { postId, commentId } = req.body;
+    console.log(postId, commentId);
+    
+    if (!postId || !commentId) {
         throw new ApiError(401, "Something went wrong while creating adding comment to Post")
     }
 
     try {
-        const Post = await Post.findByIdAndUpdate(
-            PostId,
+        const fetchedPost = await Post.findByIdAndUpdate(
+            postId,
             {
                 $push: {
                     comment: commentId
                 }
             }
         )
-        console.log(PostId);
+        console.log(postId);
         return res.status(200)
             .json(
-                new ApiResponse(200, Post, "Comment added successfully")
+                new ApiResponse(200, fetchedPost, "Comment added successfully")
             )
     } catch (error) {
         return res.status(401)
@@ -77,41 +79,92 @@ const AddCommentInPost = asyncHandler(async (req, res) => {
 
 const getPost = asyncHandler(async (req, res) => {
     const { postId } = req.body;
-    const fetchedPost = await Post.aggregate(
-        [
-            {
-                $match:
-                {
-                    _id: new mongoose.Types.ObjectId(postId),
-                },
-            },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'owner',
-                    foreignField: '_id',
-                    as: "userDetails",
-                    pipeline: [
-                        {
-                            $project: {
-                                username: 1,
-                                avatar: 1,
-                                fullName: 1,
-                            }
-                        }
-                    ]
-                }
+
+    const fetchedPost = await Post.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(postId)
             }
-        ]
-    )
-    return res
-        .status(200)
-        .json(new ApiResponse(
-            200,
-            fetchedPost[0],
-            "Post fetched successfully"
-        ))
-})
+        },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'owner',
+                foreignField: '_id',
+                as: 'userDetails',
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            avatar: 1,
+                            fullName: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: '$userDetails'
+        },
+        {
+            $lookup: {
+                from: 'comments',
+                localField: 'comment',
+                foreignField: '_id',
+                as: 'commentDetails',
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'owner',
+                            foreignField: '_id',
+                            as: 'commentOwner',
+                            pipeline: [
+                                {
+                                    $project: {
+                                        _id:1,
+                                        username: 1,
+                                        avatar: 1,
+                                        fullName: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $unwind: '$commentOwner'
+                    },
+                    {
+                        $project: {
+                            content: 1,
+                            likeCount: 1,
+                            createdAt: 1,
+                            commentOwner: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $project: {
+                image: 1,
+                content: 1,
+                type: 1,
+                city: 1,
+                location: 1,
+                likeCount: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                userDetails: 1,
+                commentDetails: 1
+            }
+        }
+    ]);
+
+    return res.status(200).json(
+        new ApiResponse(200, fetchedPost[0], "Post fetched successfully")
+    );
+});
 
 const getPosts = asyncHandler(async (req, res) => {
     console.log(req.body);
@@ -230,13 +283,13 @@ const getPosts = asyncHandler(async (req, res) => {
 
 
 const getAllCommentOfPost = asyncHandler(async (req, res) => {
-    const { PostId } = req.body;
-    console.log(PostId);
+    const { postId } = req.body;
+    console.log(postId);
     const comment = await Post.aggregate(
         [
             {
                 $match: {
-                    _id: new mongoose.Types.ObjectId(PostId)
+                    _id: new mongoose.Types.ObjectId(postId)
                 }
             },
             {
@@ -256,7 +309,8 @@ const getAllCommentOfPost = asyncHandler(async (req, res) => {
                                     {
                                         $project: {
                                             username: 1,
-                                            avatar: 1
+                                            avatar: 1,
+                                            fullName:1
 
                                         }
                                     }
@@ -286,11 +340,25 @@ const getAllCommentOfPost = asyncHandler(async (req, res) => {
         ))
 })
 
+const getUserPosts = asyncHandler(async (req, res) => {
+    const {username} = req.body;
+
+    if (username.trim() === "") {
+        throw new ApiError(401, "username not found");
+    }
+    const user = await User.find({username})
+    console.log(user[0]);
+    
+    const posts = await Post.find({owner:user[0]._id}).lean();
+    
+    return res.status(200).json(new ApiResponse(200, posts, "user posts fetched successfully"))
+})
 
 export {
     createPost,
     AddCommentInPost,
     getPosts,
     getAllCommentOfPost,
-    getPost
+    getPost,
+    getUserPosts
 }

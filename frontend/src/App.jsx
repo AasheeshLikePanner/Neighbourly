@@ -7,6 +7,7 @@ import useStore from './store/store'
 import PostDetail from './components/PostDetail'
 import { Routes, Route } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
+import Profile from './components/Profile'
 
 function App() {
   const { user, setUser } = useStore()
@@ -18,7 +19,6 @@ function App() {
     async function fetchCurrentUser() {
       try {
         const response = await getCurrentUser()
-        console.log(response.data)
         setUser(response.data)
       } catch (error) {
         console.error("Error fetching user:", error)
@@ -43,6 +43,7 @@ function App() {
       <Route path='/' element={<Home/>}/>
       <Route path='/auth' element={<AuthSystem/>}/>
       <Route path='/post/:postId' element={<PostDetail/>}/>
+      <Route path='/profile/:username' element={<Profile/>}/>
     </Routes>
   )
 }

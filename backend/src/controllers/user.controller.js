@@ -277,9 +277,9 @@ const getPostHistory = asyncHandler(async (req, res) => {
 });
 
 const getUser = asyncHandler(async (req, res) => {
-    const {userId} = req.body;
+    const {username} = req.body;
 
-    const r = await User.findById(userId)
+    const r = await User.find({username})
     if(!r){
         throw new ApiError(404, "User not found")
     }
