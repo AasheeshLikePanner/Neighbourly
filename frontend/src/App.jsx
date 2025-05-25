@@ -4,10 +4,15 @@ import Home from './components/Home'
 import AuthSystem from './components/Auth'
 import { getCurrentUser } from './apis/apis'
 import useStore from './store/store'
+import PostDetail from './components/PostDetail'
+import { Routes, Route } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 function App() {
   const { user, setUser } = useStore()
   const [loading, setLoading] = useState(true)
+  const navigation  = useNavigate()
+
 
   useEffect(() => {
     async function fetchCurrentUser() {
@@ -17,6 +22,7 @@ function App() {
         setUser(response.data)
       } catch (error) {
         console.error("Error fetching user:", error)
+        navigation('/auth')
       } finally {
         setLoading(false)
       }
@@ -33,9 +39,11 @@ function App() {
   }
 
   return (
-    <div>
-      {user ? <Home /> : <AuthSystem />}
-    </div>
+    <Routes>
+      <Route path='/' element={<Home/>}/>
+      <Route path='/auth' element={<AuthSystem/>}/>
+      <Route path='/post/:postId' element={<PostDetail/>}/>
+    </Routes>
   )
 }
 

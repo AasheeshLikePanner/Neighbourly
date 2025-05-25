@@ -36,3 +36,12 @@ export const getAllPost = async (filter) => {
     }
 }
 
+export const getPostById = async (postId) => {
+    try {
+        const response = await axios.post(apiPrefix + '/posts/post', {postId});
+        console.log(response.data);
+        return response.data.data
+    } catch (error) {
+       throw error; 
+    }
+}

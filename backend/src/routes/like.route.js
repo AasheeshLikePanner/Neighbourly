@@ -3,8 +3,8 @@ import { likeItem, unLikeItem } from '../controllers/like.controller.js';
 
 const router = Router();
 
-router.route('/like-item').post(likeItem)
+router.route('/like').post(likeItem)
 
-router.route('/unlike-item').post(unLikeItem)
+router.route('/unlike').post(unLikeItem)
 
 export default router;

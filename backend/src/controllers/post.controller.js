@@ -76,13 +76,13 @@ const AddCommentInPost = asyncHandler(async (req, res) => {
 })
 
 const getPost = asyncHandler(async (req, res) => {
-    const { PostId } = req.body;
-    const Post = await Post.aggregate(
+    const { postId } = req.body;
+    const fetchedPost = await Post.aggregate(
         [
             {
                 $match:
                 {
-                    _id: new mongoose.Types.ObjectId(PostId),
+                    _id: new mongoose.Types.ObjectId(postId),
                 },
             },
             {
@@ -108,7 +108,7 @@ const getPost = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(
             200,
-            Post,
+            fetchedPost[0],
             "Post fetched successfully"
         ))
 })
@@ -207,7 +207,7 @@ const getPosts = asyncHandler(async (req, res) => {
         .sort(sort)
         .skip(skip)
         .limit(limit)
-        .populate('owner', 'username avatar')
+        .populate('owner', 'username avatar fullName')
         .lean();
 
     // Add comment count for each post (optional but useful)

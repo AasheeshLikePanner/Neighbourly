@@ -11,6 +11,8 @@ router.route('/add-comment-post').post(verifyJWT, AddCommentInPost)
 
 router.route('/posts').post(getPosts)
 
+router.route('/post').post(getPost)
+
 router.route('/comments').post(getAllCommentOfPost)
 
 

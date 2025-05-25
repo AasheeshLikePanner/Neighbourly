@@ -59,7 +59,7 @@ const PostFeed = ({ getTypeConfig, posts = [], handleLike, likedPosts, isLoading
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h3 className="font-bold text-gray-900 text-base truncate">{post.owner.fullName}</h3>
+                      <h3 className="font-bold text-gray-900 text-base truncate">{post.owner.fullName||'unkown'}</h3>
                       <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${typeConfig.bg} ${typeConfig.text} flex items-center space-x-1 flex-shrink-0`}>
                         <span>{typeConfig.icon}</span>
                         <span className="hidden sm:inline">2</span>

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Search, Bell, Plus, Home, User, Compass, Bookmark, MapPin, TrendingUp, Sparkles, Globe, Users, Calendar, Image, Smile, Send, ChevronRight, Filter, Zap, Menu } from 'lucide-react';
-import designSystem from '../utils/designSystem'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Heart, MessageCircle, Share2, MoreHorizontal, MapPin, TrendingUp, Sparkles, Zap } from 'lucide-react';
+import designSystem from '../utils/designSystem';
 import NavigationBar from './NavigationBar';
 import MobileMenu from './MobileMenu';
 import LeftSideBar from './LeftSideBar';
@@ -10,12 +11,9 @@ import CreatePost from './CreatePost';
 import PostFeed from './PostFeed';
 import RightSide from './RightSide';
 import MobileBottomNavigation from './MobileBottomNavigation';
-import useStore from '../store/store'
-import { getAllPost  } from '../apis/post.api';
-import { getUserLikes  } from '../apis/like.api';
-
-import { useNavigate } from 'react-router-dom';
-import { Tooltip } from './Tooltip'; // You'll need to create this component
+import useStore from '../store/store';
+import { getAllPost } from '../apis/post.api';
+import { getUserLikes } from '../apis/like.api';
 
 const SocialApp = () => {
   const [activeFilter, setActiveFilter] = useState('Nearby');
@@ -23,12 +21,13 @@ const SocialApp = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [showNewPost, setShowNewPost] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, setUser } = useStore();
+  const [selectedPost, setSelectedPost] = useState(null);
+  const { user } = useStore();
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch user likes when component mounts and when user changes
+  // Fetch user likes
   useEffect(() => {
     const fetchUserLikes = async () => {
       if (user?._id) {
@@ -44,6 +43,7 @@ const SocialApp = () => {
     fetchUserLikes();
   }, [user]);
 
+  // Fetch posts
   useEffect(() => {
     async function getPosts() {
       setIsLoading(true);
@@ -71,13 +71,15 @@ const SocialApp = () => {
           maximumAge: 0
         });
       });
-
-      return { latitude: position.coords.latitude, longitude: position.coords.longitude };
+      return { 
+        latitude: position.coords.latitude, 
+        longitude: position.coords.longitude 
+      };
     } catch (error) {
       console.error('Error getting location:', error);
       return {};
     }
-  }
+  };
 
   const filters = [
     { name: 'Nearby', icon: MapPin, count: '2.3K' },
@@ -88,7 +90,6 @@ const SocialApp = () => {
 
   const handleLike = async (postId) => {
     try {
-      // Optimistic UI update
       setLikedPosts(prev => {
         const newLiked = new Set(prev);
         if (newLiked.has(postId)) {
@@ -98,21 +99,10 @@ const SocialApp = () => {
         }
         return newLiked;
       });
-
-      // TODO: Call API to like/unlike the post
-      // await likePost(postId, user._id);
+      // TODO: Implement API call to like/unlike
     } catch (error) {
       console.error('Error handling like:', error);
-      // Revert optimistic update if API call fails
-      setLikedPosts(prev => {
-        const newLiked = new Set(prev);
-        if (newLiked.has(postId)) {
-          newLiked.delete(postId);
-        } else {
-          newLiked.add(postId);
-        }
-        return newLiked;
-      });
+      setLikedPosts(prev => new Set(prev)); // Revert on error
     }
   };
 
@@ -152,33 +142,31 @@ const SocialApp = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${designSystem.gradients.background} relative overflow-hidden`}>
-      {/* Navigation Bar */}
-      <NavigationBar user={user} setShowNewPost={setShowNewPost} setMobileMenuOpen={setMobileMenuOpen} showNewPost={showNewPost} mobileMenuOpen={mobileMenuOpen} />
+      <NavigationBar 
+        user={user} 
+        setShowNewPost={setShowNewPost} 
+        setMobileMenuOpen={setMobileMenuOpen} 
+        showNewPost={showNewPost} 
+        mobileMenuOpen={mobileMenuOpen} 
+      />
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <MobileMenu setMobileMenuOpen={setMobileMenuOpen} />
-      )}
+      {mobileMenuOpen && <MobileMenu setMobileMenuOpen={setMobileMenuOpen} />}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Sidebar - Hidden on mobile */}
           <LeftSideBar user={user} />
 
-          {/* Main Content */}
           <div className="flex-1 max-w-2xl">
-            {/* Filter Bar - Mobile Version */}
             <FilterBarMobile filters={filters} setActiveFilter={setActiveFilter} activeFilter={activeFilter} />
-
-            {/* Filter Bar - Desktop Version */}
             <FilterBar setActiveFilter={setActiveFilter} activeFilter={activeFilter} filters={filters} />
 
-            {/* Create Post */}
             {showNewPost && (
-              <CreatePost setNewPostContent={setNewPostContent} newPostContent={newPostContent} />
+              <CreatePost 
+                setNewPostContent={setNewPostContent} 
+                newPostContent={newPostContent} 
+              />
             )}
 
-            {/* Posts Feed */}
             <PostFeed
               getTypeConfig={getTypeConfig}
               posts={posts}
@@ -189,12 +177,10 @@ const SocialApp = () => {
             />
           </div>
 
-          {/* Right Sidebar - Hidden on mobile */}
           <RightSide />
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
       <MobileBottomNavigation />
     </div>
   );
