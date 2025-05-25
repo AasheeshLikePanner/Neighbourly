@@ -111,7 +111,7 @@ const AuthPage = () => {
     submissionData.append('fullName', data.fullName);
 
     if (data.avatar && data.avatar[0]) {
-      submissionData.append('avatar', data.avatar[0]);
+      submissionData.append('image', data.avatar[0]);
     }
     for (let pair of submissionData.entries()) {
       console.log(pair[0] + ':', pair[1]);

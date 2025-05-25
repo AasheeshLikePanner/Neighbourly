@@ -5,11 +5,18 @@ import { useForm } from 'react-hook-form';
 import EmojiPicker from 'emoji-picker-react';
 import axios from 'axios';
 import debounce from 'lodash.debounce';
+import { createPost } from '../apis/post.api';
+import POST_TYPES from '../utils/postTypes';
 
 const CreatePost = ({ onPostCreated }) => {
-  const { register, handleSubmit, setValue, watch, reset } = useForm();
+  const { register, handleSubmit, setValue, watch, reset } = useForm({
+    defaultValues: {
+      type: 'update'
+    }
+  });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [showPostTypeDropdown, setShowPostTypeDropdown] = useState(false);
   const fileInputRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -21,14 +28,20 @@ const CreatePost = ({ onPostCreated }) => {
   const [isSearchingLocations, setIsSearchingLocations] = useState(false);
   const emojiPickerRef = useRef(null);
   const locationInputRef = useRef(null);
+  const postTypeDropdownRef = useRef(null);
 
   const content = watch('content', '');
+  const postType = watch('type', 'update');
+  const currentPostType = POST_TYPES.find(type => type.value === postType) || POST_TYPES[2];
 
-  // Close emoji picker when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
         setShowEmojiPicker(false);
+      }
+      if (postTypeDropdownRef.current && !postTypeDropdownRef.current.contains(event.target)) {
+        setShowPostTypeDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -79,7 +92,11 @@ const CreatePost = ({ onPostCreated }) => {
     }
   };
 
-  // Debounced location search with caching
+  const selectPostType = (type) => {
+    setValue('type', type);
+    setShowPostTypeDropdown(false);
+  };
+
   const searchLocations = useCallback(debounce(async (query) => {
     if (!query.trim()) {
       setLocationSuggestions([]);
@@ -107,7 +124,6 @@ const CreatePost = ({ onPostCreated }) => {
     }
   }, 300), []);
 
-  // Format location name more precisely
   const formatDisplayName = useCallback((item) => {
     const { address } = item;
     if (!address) return item.display_name;
@@ -124,7 +140,6 @@ const CreatePost = ({ onPostCreated }) => {
     ].filter(Boolean).join(', ');
   }, []);
 
-  // Get precise current location
   const getLocation = useCallback(async () => {
     if (!navigator.geolocation) return;
 
@@ -157,14 +172,12 @@ const CreatePost = ({ onPostCreated }) => {
     }
   }, [formatDisplayName]);
 
-  // Handle location input changes
   const handleLocationInputChange = useCallback((e) => {
     const value = e.target.value;
     setCustomLocation(value);
     searchLocations(value);
   }, [searchLocations]);
 
-  // Select a location from suggestions
   const selectLocation = useCallback((suggestion) => {
     setLocation(suggestion);
     setCustomLocation('');
@@ -181,11 +194,14 @@ const CreatePost = ({ onPostCreated }) => {
       alert('Please add some content or an image');
       return;
     }
+    console.log("going");
+    
 
     setIsSubmitting(true);
 
     const formData = new FormData();
     formData.append('content', data.content);
+    formData.append('type', data.type);
 
     if (fileInputRef.current?.files[0]) {
       formData.append('image', fileInputRef.current.files[0]);
@@ -194,16 +210,14 @@ const CreatePost = ({ onPostCreated }) => {
     if (location) {
       formData.append('latitude', location.latitude);
       formData.append('longitude', location.longitude);
-      formData.append('location_name', location.displayName);
     }
 
     try {
-      const response = await axios.post('/api/posts', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
+      console.log('adsf');
+      
+      const response = await createPost(formData);
+      console.log('df');
+      
       if (onPostCreated) {
         onPostCreated(response.data);
       }
@@ -220,13 +234,22 @@ const CreatePost = ({ onPostCreated }) => {
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 mb-6 border border-white/30 shadow-lg shadow-gray-200/20">
+    <div 
+      className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 mb-6 border border-white/30 shadow-lg shadow-gray-200/20"
+      style={{
+        borderRadius: designSystem.borderRadius.xl,
+        fontFamily: designSystem.typography.fontFamily.sans
+      }}
+    >
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex space-x-4">
           <img
             src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face"
             alt="Your avatar"
             className="w-11 h-11 rounded-xl object-cover"
+            style={{
+              borderRadius: designSystem.borderRadius.base
+            }}
           />
           <div className="flex-1 relative">
             <textarea
@@ -234,7 +257,61 @@ const CreatePost = ({ onPostCreated }) => {
               placeholder="What's happening in your community?"
               className="w-full bg-transparent outline-none text-gray-800 placeholder-gray-500 resize-none text-base leading-relaxed"
               rows="3"
+              style={{
+                fontSize: designSystem.typography.fontSize.base
+              }}
             />
+
+            {/* Post Type Selector */}
+            <div className="relative mb-3" ref={postTypeDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setShowPostTypeDropdown(!showPostTypeDropdown)}
+                className="flex items-center text-sm rounded-full px-3 py-1.5 transition-all duration-200 border shadow-sm"
+                style={{
+                  backgroundColor: currentPostType.bgColor,
+                  color: currentPostType.color,
+                  borderColor: currentPostType.borderColor,
+                  fontSize: designSystem.typography.fontSize.sm,
+                  fontWeight: designSystem.typography.fontWeight.medium
+                }}
+              >
+                <span className="mr-2">{currentPostType.icon}</span>
+                <span>{currentPostType.label}</span>
+                <ChevronDown 
+                  className="w-4 h-4 ml-2 transition-transform duration-200"
+                  style={{ color: currentPostType.color }}
+                />
+              </button>
+              
+              {showPostTypeDropdown && (
+                <div 
+                  className="absolute left-0 mt-1 w-56 bg-white rounded-lg shadow-xl z-10 border border-gray-200 overflow-hidden"
+                  style={{
+                    borderRadius: designSystem.borderRadius.base,
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
+                  }}
+                >
+                  {POST_TYPES.map((type) => (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => selectPostType(type.value)}
+                      className="w-full text-left px-4 py-2.5 text-sm flex items-center transition-colors hover:bg-gray-50"
+                      style={{
+                        color: type.color,
+                        backgroundColor: postType === type.value ? type.bgColor : 'transparent',
+                        fontWeight: postType === type.value 
+                          ? designSystem.typography.fontWeight.semibold 
+                          : designSystem.typography.fontWeight.normal
+                      }}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {imagePreview && (
               <div className="relative mt-3 rounded-xl overflow-hidden transition-all duration-200">
@@ -243,6 +320,9 @@ const CreatePost = ({ onPostCreated }) => {
                   type="button"
                   onClick={removeImage}
                   className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                  style={{
+                    borderRadius: designSystem.borderRadius.full
+                  }}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -251,7 +331,14 @@ const CreatePost = ({ onPostCreated }) => {
 
             {location && (
               <div className="mt-3 flex items-center transition-all duration-200">
-                <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm flex items-center max-w-full">
+                <div 
+                  className="px-3 py-1 rounded-full text-sm flex items-center max-w-full"
+                  style={{
+                    backgroundColor: `${designSystem.colors.primary.blue}10`,
+                    color: designSystem.colors.primary.blue,
+                    borderRadius: designSystem.borderRadius.full
+                  }}
+                >
                   <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
                   <span className="truncate" title={location.displayName}>
                     {location.displayName}
@@ -280,6 +367,9 @@ const CreatePost = ({ onPostCreated }) => {
                   type="button"
                   onClick={() => fileInputRef.current.click()}
                   className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors duration-150"
+                  style={{
+                    borderRadius: designSystem.borderRadius.sm
+                  }}
                 >
                   <ImageIcon className="w-4 h-4" />
                 </button>
@@ -289,6 +379,9 @@ const CreatePost = ({ onPostCreated }) => {
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                     className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors duration-150"
+                    style={{
+                      borderRadius: designSystem.borderRadius.sm
+                    }}
                   >
                     <Smile className="w-4 h-4" />
                   </button>
@@ -320,6 +413,9 @@ const CreatePost = ({ onPostCreated }) => {
                       ? 'text-green-500 hover:bg-green-50' 
                       : 'text-blue-600 hover:bg-blue-50'
                   }`}
+                  style={{
+                    borderRadius: designSystem.borderRadius.sm
+                  }}
                 >
                   <MapPin className="w-4 h-4" />
                 </button>
@@ -328,7 +424,11 @@ const CreatePost = ({ onPostCreated }) => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`bg-gradient-to-r ${designSystem.gradients.primary} text-white px-5 py-2 rounded-lg flex items-center space-x-2 hover:scale-105 transition-all duration-200 font-medium text-sm disabled:opacity-70 disabled:transform-none`}
+                className={`bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-5 py-2 rounded-lg flex items-center space-x-2 hover:scale-105 transition-all duration-200 font-medium text-sm disabled:opacity-70 disabled:transform-none`}
+                style={{
+                  borderRadius: designSystem.borderRadius.base,
+                  fontWeight: designSystem.typography.fontWeight.semibold
+                }}
               >
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -342,9 +442,22 @@ const CreatePost = ({ onPostCreated }) => {
             </div>
 
             {showLocationInput && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg transition-all duration-200">
+              <div 
+                className="mt-4 p-3 bg-gray-50 rounded-lg transition-all duration-200"
+                style={{
+                  borderRadius: designSystem.borderRadius.base
+                }}
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-medium text-gray-700">Add Location</h4>
+                  <h4 
+                    className="text-sm font-medium text-gray-700"
+                    style={{
+                      fontSize: designSystem.typography.fontSize.sm,
+                      fontWeight: designSystem.typography.fontWeight.medium
+                    }}
+                  >
+                    Add Location
+                  </h4>
                   <button
                     type="button"
                     onClick={() => {
@@ -368,6 +481,9 @@ const CreatePost = ({ onPostCreated }) => {
                           : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-800'
                       }`}
                       disabled={isFetchingLocation}
+                      style={{
+                        borderRadius: designSystem.borderRadius.sm
+                      }}
                     >
                       <span className="flex items-center">
                         {isFetchingLocation ? (
@@ -396,6 +512,10 @@ const CreatePost = ({ onPostCreated }) => {
                     onChange={handleLocationInputChange}
                     placeholder="Search for a location..."
                     className="w-full text-sm p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                    style={{
+                      borderRadius: designSystem.borderRadius.sm,
+                      fontSize: designSystem.typography.fontSize.sm
+                    }}
                   />
                   {isSearchingLocations && (
                     <div className="absolute right-2 top-2">
@@ -405,13 +525,21 @@ const CreatePost = ({ onPostCreated }) => {
                 </div>
 
                 {locationSuggestions.length > 0 && (
-                  <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden transition-all duration-200">
+                  <div 
+                    className="mt-2 border border-gray-200 rounded-lg overflow-hidden transition-all duration-200"
+                    style={{
+                      borderRadius: designSystem.borderRadius.sm
+                    }}
+                  >
                     {locationSuggestions.map((suggestion, index) => (
                       <button
                         key={index}
                         type="button"
                         onClick={() => selectLocation(suggestion)}
                         className="w-full text-left p-2 hover:bg-gray-100 text-sm flex items-center transition-colors"
+                        style={{
+                          fontSize: designSystem.typography.fontSize.sm
+                        }}
                       >
                         <MapPin className="w-3 h-3 mr-2 text-gray-500 flex-shrink-0" />
                         <span className="truncate">{suggestion.displayName}</span>
@@ -420,7 +548,12 @@ const CreatePost = ({ onPostCreated }) => {
                   </div>
                 )}
 
-                <p className="text-xs text-gray-500 mt-2">
+                <p 
+                  className="text-xs text-gray-500 mt-2"
+                  style={{
+                    fontSize: designSystem.typography.fontSize.xs
+                  }}
+                >
                   Search for places, addresses, or landmarks
                 </p>
               </div>

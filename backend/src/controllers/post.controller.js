@@ -7,23 +7,23 @@ import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
 
 const createPost = asyncHandler(async (req, res) => {
-  const { content, type, state, latitude, longitude } = req.body;
+    
+  const { content, type, latitude, longitude } = req.body;
 
   if ([type, content].some((field) => field?.trim() === "")) {
     throw new ApiError(401, "All fields are required");
   }
 
   let image;
-  const imageBuffer = req.file?.buffer;
+  const imageBuffer = req.file;
   if (imageBuffer) {
-    image = await uploadOnCloudinary(imageBuffer);
+    image = await uploadOnCloudinary(imageBuffer.buffer);
   }
 
   const newPost = await Post.create({
     image,
     content,
     type,
-    state,
     owner: req.user._id,
     location: latitude && longitude
       ? {
@@ -41,8 +41,6 @@ const createPost = asyncHandler(async (req, res) => {
     new ApiResponse(200, newPost, "Post created successfully")
   );
 });
-
-
 
 const AddCommentInPost = asyncHandler(async (req, res) => {
     const { PostId, commentId } = req.body;
@@ -112,20 +110,14 @@ const getPost = asyncHandler(async (req, res) => {
 })
 
 const getPosts = asyncHandler(async (req, res) => {
-
-    const { state, filterType, latitude, longitude } = req.body;
+    console.log(req.body);
+    
+    const { filterType, latitude, longitude } = req.body;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    if (!state && filterType !== 'nearby') {
-        return res.status(400).json({ message: "State is required for this filter" });
-    }
-
     let query = {};
-    if (filterType !== 'nearby') {
-        query.state = state;
-    }
 
     let sort = {};
     let aggregatePipeline = [];
@@ -136,12 +128,10 @@ const getPosts = asyncHandler(async (req, res) => {
             break;
 
         case 'trending':
-            // Trending = recent 7 days + high likeCount
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
             query = {
-                ...query,
                 createdAt: { $gte: sevenDaysAgo }
             };
             sort = { likeCount: -1, createdAt: -1 };
@@ -164,7 +154,7 @@ const getPosts = asyncHandler(async (req, res) => {
                     $geoNear: {
                         near: { type: "Point", coordinates: [parseFloat(longitude), parseFloat(latitude)] },
                         distanceField: "distance",
-                        maxDistance: 10000, // 10 km radius, adjust as needed
+                        maxDistance: 20000, // 10 km radius, adjust as needed
                         spherical: true,
                         query: {}
                     }
@@ -186,10 +176,9 @@ const getPosts = asyncHandler(async (req, res) => {
                         image: 1,
                         content: 1,
                         type: 1,
-                        state: 1,
                         likeCount: 1,
                         createdAt: 1,
-                        owner: { username: 1, avatar: 1 },
+                        owner: { username: 1, avatar: 1, fullName: 1 },
                         distance: 1,
                         commentCount: { $size: "$comment" }
                     }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Search, Bell, Plus, Home, User, Compass, Bookmark, MapPin, TrendingUp, Sparkles, Globe, Users, Calendar, Image, Smile, Send, ChevronRight, Filter, Zap, Menu } from 'lucide-react';
 import designSystem from '../utils/designSystem'
 
-const NavigationBar = ({setShowNewPost, setMobileMenuOpen, showNewPost, mobileMenuOpen}) => {
+const NavigationBar = ({ user,setShowNewPost, setMobileMenuOpen, showNewPost, mobileMenuOpen}) => {
 
     return (
         <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg shadow-gray-200/20">
@@ -51,7 +51,7 @@ const NavigationBar = ({setShowNewPost, setMobileMenuOpen, showNewPost, mobileMe
                         </button>
                         <div className="relative">
                             <img
-                                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                                src={user.avatar}
                                 alt="Profile"
                                 className="w-9 h-9 rounded-xl object-cover ring-2 ring-blue-200/50 hover:ring-blue-300/70 transition-all duration-200 cursor-pointer hover:scale-105"
                             />

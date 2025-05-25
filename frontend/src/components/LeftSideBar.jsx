@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Search, Bell, Plus, Home, User, Compass, Bookmark, MapPin, TrendingUp, Sparkles, Globe, Users, Calendar, Image, Smile, Send, ChevronRight, Filter, Zap, Menu } from 'lucide-react';
 import designSystem from '../utils/designSystem'
 
-const LeftSideBar = () => {
+const LeftSideBar = ({user}) => {
     
     return(
          <div className="hidden lg:block w-64 shrink-0">
@@ -11,12 +11,12 @@ const LeftSideBar = () => {
               <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-5 border border-white/30 shadow-lg shadow-gray-200/20">
                 <div className="flex items-center space-x-3 mb-5">
                   <img
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face"
+                    src={user.avatar}
                     alt="Profile"
                     className="w-11 h-11 rounded-xl object-cover"
                   />
                   <div>
-                    <h3 className="font-semibold text-gray-900 text-base">Vikram Singh</h3>
+                    <h3 className="font-semibold text-gray-900 text-base">{user.fullName}</h3>
                     <p className="text-sm text-gray-500">Level 5 Explorer</p>
                   </div>
                 </div>

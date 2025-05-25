@@ -3,7 +3,7 @@ import mongoose, { Schema } from 'mongoose'
 const postSchema = new Schema({
     image: {
         type: String,
-        required: true,
+        required: false,
     },
     owner: {
         type: Schema.Types.ObjectId,
@@ -17,7 +17,7 @@ const postSchema = new Schema({
     type: {
         type: String,
         required: true,
-        enum: ['Ask for help', 'Recommend a place', 'Share a local update', 'Event announcement'],
+        enum: ['help', 'recommendation', 'update', 'event'],
     },
     location: {
         type: {
@@ -44,6 +44,7 @@ const postSchema = new Schema({
 
 }, { timestamps: true })
 
+postSchema.index({location:'2dsphere'});
 
 
 export const Post = mongoose.model("Post", postSchema);
