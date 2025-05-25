@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Image as ImageIcon, Smile, MapPin, Send, X, ChevronDown, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Smile, MapPin, Send, X, ChevronDown, Loader2, LocateIcon } from 'lucide-react';
 import designSystem from '../utils/designSystem';
 import { useForm } from 'react-hook-form';
 import EmojiPicker from 'emoji-picker-react';
@@ -69,13 +69,11 @@ const CreatePost = ({ onPostCreated }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    console.log('File selected:', file.name, file.size); // Add this line
+
     if (!file.type.match('image.*')) {
       alert('Please select an image file');
       return;
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
     }
 
     const reader = new FileReader();
@@ -108,14 +106,14 @@ const CreatePost = ({ onPostCreated }) => {
       const response = await axios.get(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`
       );
-      
+
       const suggestions = response.data.map(item => ({
         displayName: formatDisplayName(item),
         latitude: item.lat,
         longitude: item.lon,
         address: item.address
       }));
-      
+
       setLocationSuggestions(suggestions);
     } catch (error) {
       console.error('Error searching locations:', error);
@@ -158,7 +156,7 @@ const CreatePost = ({ onPostCreated }) => {
       );
 
       const displayName = formatDisplayName(response.data);
-      
+
       setUserLocation({
         displayName,
         latitude: position.coords.latitude,
@@ -195,7 +193,8 @@ const CreatePost = ({ onPostCreated }) => {
       return;
     }
     console.log("going");
-    
+    console.log('Selected file:', fileInputRef.current?.files?.[0]);
+
 
     setIsSubmitting(true);
 
@@ -203,21 +202,25 @@ const CreatePost = ({ onPostCreated }) => {
     formData.append('content', data.content);
     formData.append('type', data.type);
 
-    if (fileInputRef.current?.files[0]) {
-      formData.append('image', fileInputRef.current.files[0]);
+    const imageFile = fileInputRef.current?.files?.[0];
+    if (imageFile) {
+      console.log('Appending image file:', imageFile.name, imageFile.size);
+      formData.append('image', imageFile); // This is the crucial line
     }
 
     if (location) {
       formData.append('latitude', location.latitude);
       formData.append('longitude', location.longitude);
+      formData.append('city', location.displayName)
     }
+    console.log(location);
 
     try {
       console.log('adsf');
-      
+
       const response = await createPost(formData);
       console.log('df');
-      
+
       if (onPostCreated) {
         onPostCreated(response.data);
       }
@@ -234,7 +237,7 @@ const CreatePost = ({ onPostCreated }) => {
   };
 
   return (
-    <div 
+    <div
       className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 mb-6 border border-white/30 shadow-lg shadow-gray-200/20"
       style={{
         borderRadius: designSystem.borderRadius.xl,
@@ -278,14 +281,14 @@ const CreatePost = ({ onPostCreated }) => {
               >
                 <span className="mr-2">{currentPostType.icon}</span>
                 <span>{currentPostType.label}</span>
-                <ChevronDown 
+                <ChevronDown
                   className="w-4 h-4 ml-2 transition-transform duration-200"
                   style={{ color: currentPostType.color }}
                 />
               </button>
-              
+
               {showPostTypeDropdown && (
-                <div 
+                <div
                   className="absolute left-0 mt-1 w-56 bg-white rounded-lg shadow-xl z-10 border border-gray-200 overflow-hidden"
                   style={{
                     borderRadius: designSystem.borderRadius.base,
@@ -301,8 +304,8 @@ const CreatePost = ({ onPostCreated }) => {
                       style={{
                         color: type.color,
                         backgroundColor: postType === type.value ? type.bgColor : 'transparent',
-                        fontWeight: postType === type.value 
-                          ? designSystem.typography.fontWeight.semibold 
+                        fontWeight: postType === type.value
+                          ? designSystem.typography.fontWeight.semibold
                           : designSystem.typography.fontWeight.normal
                       }}
                     >
@@ -331,7 +334,7 @@ const CreatePost = ({ onPostCreated }) => {
 
             {location && (
               <div className="mt-3 flex items-center transition-all duration-200">
-                <div 
+                <div
                   className="px-3 py-1 rounded-full text-sm flex items-center max-w-full"
                   style={{
                     backgroundColor: `${designSystem.colors.primary.blue}10`,
@@ -387,9 +390,9 @@ const CreatePost = ({ onPostCreated }) => {
                   </button>
                   {showEmojiPicker && (
                     <div className="absolute bottom-full left-0 z-10 transform translate-y-1">
-                      <EmojiPicker 
-                        onEmojiClick={onEmojiClick} 
-                        width={260} 
+                      <EmojiPicker
+                        onEmojiClick={onEmojiClick}
+                        width={260}
                         height={300}
                         previewConfig={{ showPreview: false }}
                         skinTonesDisabled
@@ -408,11 +411,10 @@ const CreatePost = ({ onPostCreated }) => {
                       setLocationSuggestions([]);
                     }
                   }}
-                  className={`p-2 rounded-lg transition-colors duration-150 ${
-                    location 
-                      ? 'text-green-500 hover:bg-green-50' 
+                  className={`p-2 rounded-lg transition-colors duration-150 ${location
+                      ? 'text-green-500 hover:bg-green-50'
                       : 'text-blue-600 hover:bg-blue-50'
-                  }`}
+                    }`}
                   style={{
                     borderRadius: designSystem.borderRadius.sm
                   }}
@@ -442,14 +444,14 @@ const CreatePost = ({ onPostCreated }) => {
             </div>
 
             {showLocationInput && (
-              <div 
+              <div
                 className="mt-4 p-3 bg-gray-50 rounded-lg transition-all duration-200"
                 style={{
                   borderRadius: designSystem.borderRadius.base
                 }}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h4 
+                  <h4
                     className="text-sm font-medium text-gray-700"
                     style={{
                       fontSize: designSystem.typography.fontSize.sm,
@@ -475,11 +477,10 @@ const CreatePost = ({ onPostCreated }) => {
                     <button
                       type="button"
                       onClick={() => selectLocation(userLocation)}
-                      className={`w-full text-left p-2 rounded-lg border flex items-center justify-between transition-colors ${
-                        isFetchingLocation
+                      className={`w-full text-left p-2 rounded-lg border flex items-center justify-between transition-colors ${isFetchingLocation
                           ? 'border-gray-200 bg-gray-100 text-gray-500'
                           : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-800'
-                      }`}
+                        }`}
                       disabled={isFetchingLocation}
                       style={{
                         borderRadius: designSystem.borderRadius.sm
@@ -525,7 +526,7 @@ const CreatePost = ({ onPostCreated }) => {
                 </div>
 
                 {locationSuggestions.length > 0 && (
-                  <div 
+                  <div
                     className="mt-2 border border-gray-200 rounded-lg overflow-hidden transition-all duration-200"
                     style={{
                       borderRadius: designSystem.borderRadius.sm
@@ -548,7 +549,7 @@ const CreatePost = ({ onPostCreated }) => {
                   </div>
                 )}
 
-                <p 
+                <p
                   className="text-xs text-gray-500 mt-2"
                   style={{
                     fontSize: designSystem.typography.fontSize.xs

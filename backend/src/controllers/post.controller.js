@@ -7,39 +7,43 @@ import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
 
 const createPost = asyncHandler(async (req, res) => {
-    
-  const { content, type, latitude, longitude } = req.body;
 
-  if ([type, content].some((field) => field?.trim() === "")) {
-    throw new ApiError(401, "All fields are required");
-  }
+    const { city, content, type, latitude, longitude } = req.body;
 
-  let image;
-  const imageBuffer = req.file;
-  if (imageBuffer) {
-    image = await uploadOnCloudinary(imageBuffer.buffer);
-  }
+    if ([type, content].some((field) => field?.trim() === "")) {
+        throw new ApiError(401, "All fields are required");
+    }
 
-  const newPost = await Post.create({
-    image,
-    content,
-    type,
-    owner: req.user._id,
-    location: latitude && longitude
-      ? {
-          type: "Point",
-          coordinates: [parseFloat(longitude), parseFloat(latitude)]
-        }
-      : undefined
-  });
+    let image;
+    const imageBuffer = req.file;
+    console.log(req.file);
+    if (imageBuffer) {
+        image = await uploadOnCloudinary(imageBuffer.buffer);
+        console.log(image);
+        
+    }
 
-  if (!newPost) {
-    throw new ApiError(500, "Something went wrong while creating the Post");
-  }
+    const newPost = await Post.create({
+        image:image.url,
+        content,
+        city,
+        type,
+        owner: req.user._id,
+        location: latitude && longitude
+            ? {
+                type: "Point",
+                coordinates: [parseFloat(longitude), parseFloat(latitude)]
+            }
+            : undefined
+    });
+    console.log('post created successful')
+    if (!newPost) {
+        throw new ApiError(500, "Something went wrong while creating the Post");
+    }
 
-  return res.status(201).json(
-    new ApiResponse(200, newPost, "Post created successfully")
-  );
+    return res.status(201).json(
+        new ApiResponse(200, newPost, "Post created successfully")
+    );
 });
 
 const AddCommentInPost = asyncHandler(async (req, res) => {
@@ -111,7 +115,7 @@ const getPost = asyncHandler(async (req, res) => {
 
 const getPosts = asyncHandler(async (req, res) => {
     console.log(req.body);
-    
+
     const { filterType, latitude, longitude } = req.body;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -176,6 +180,7 @@ const getPosts = asyncHandler(async (req, res) => {
                         image: 1,
                         content: 1,
                         type: 1,
+                        city: 1,
                         likeCount: 1,
                         createdAt: 1,
                         owner: { username: 1, avatar: 1, fullName: 1 },

@@ -11,7 +11,11 @@ import PostFeed from './PostFeed';
 import RightSide from './RightSide';
 import MobileBottomNavigation from './MobileBottomNavigation';
 import useStore from '../store/store'
-import { getAllPost } from '../apis/post.api';
+import { getAllPost  } from '../apis/post.api';
+import { getUserLikes  } from '../apis/like.api';
+
+import { useNavigate } from 'react-router-dom';
+import { Tooltip } from './Tooltip'; // You'll need to create this component
 
 const SocialApp = () => {
   const [activeFilter, setActiveFilter] = useState('Nearby');
@@ -22,7 +26,23 @@ const SocialApp = () => {
   const { user, setUser } = useStore();
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
+  // Fetch user likes when component mounts and when user changes
+  useEffect(() => {
+    const fetchUserLikes = async () => {
+      if (user?._id) {
+        try {
+          const likes = await getUserLikes(user._id);
+          const postLikes = likes.filter(like => like.itemType === 'Post');
+          setLikedPosts(new Set(postLikes.map(like => like.item.toString())));
+        } catch (error) {
+          console.error('Error fetching user likes:', error);
+        }
+      }
+    };
+    fetchUserLikes();
+  }, [user]);
 
   useEffect(() => {
     async function getPosts() {
@@ -41,9 +61,8 @@ const SocialApp = () => {
     getPosts();
   }, [activeFilter]);
 
-
   const getLocation = async () => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) return {};
     try {
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -56,6 +75,7 @@ const SocialApp = () => {
       return { latitude: position.coords.latitude, longitude: position.coords.longitude };
     } catch (error) {
       console.error('Error getting location:', error);
+      return {};
     }
   }
 
@@ -66,17 +86,38 @@ const SocialApp = () => {
     { name: 'Top', icon: Zap, count: '956' }
   ];
 
+  const handleLike = async (postId) => {
+    try {
+      // Optimistic UI update
+      setLikedPosts(prev => {
+        const newLiked = new Set(prev);
+        if (newLiked.has(postId)) {
+          newLiked.delete(postId);
+        } else {
+          newLiked.add(postId);
+        }
+        return newLiked;
+      });
 
-  const handleLike = (postId) => {
-    setLikedPosts(prev => {
-      const newLiked = new Set(prev);
-      if (newLiked.has(postId)) {
-        newLiked.delete(postId);
-      } else {
-        newLiked.add(postId);
-      }
-      return newLiked;
-    });
+      // TODO: Call API to like/unlike the post
+      // await likePost(postId, user._id);
+    } catch (error) {
+      console.error('Error handling like:', error);
+      // Revert optimistic update if API call fails
+      setLikedPosts(prev => {
+        const newLiked = new Set(prev);
+        if (newLiked.has(postId)) {
+          newLiked.delete(postId);
+        } else {
+          newLiked.add(postId);
+        }
+        return newLiked;
+      });
+    }
+  };
+
+  const handleViewDetails = (postId) => {
+    navigate(`/post/${postId}`);
   };
 
   const getTypeConfig = (type) => {
@@ -111,7 +152,6 @@ const SocialApp = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${designSystem.gradients.background} relative overflow-hidden`}>
-
       {/* Navigation Bar */}
       <NavigationBar user={user} setShowNewPost={setShowNewPost} setMobileMenuOpen={setMobileMenuOpen} showNewPost={showNewPost} mobileMenuOpen={mobileMenuOpen} />
 
@@ -127,10 +167,10 @@ const SocialApp = () => {
 
           {/* Main Content */}
           <div className="flex-1 max-w-2xl">
-            {/* Filter Bar - Mobile Version (unchanged) */}
+            {/* Filter Bar - Mobile Version */}
             <FilterBarMobile filters={filters} setActiveFilter={setActiveFilter} activeFilter={activeFilter} />
 
-            {/* Filter Bar - Desktop Version (fixed) */}
+            {/* Filter Bar - Desktop Version */}
             <FilterBar setActiveFilter={setActiveFilter} activeFilter={activeFilter} filters={filters} />
 
             {/* Create Post */}
@@ -145,6 +185,7 @@ const SocialApp = () => {
               handleLike={handleLike}
               likedPosts={likedPosts}
               isLoading={isLoading}
+              onViewDetails={handleViewDetails}
             />
           </div>
 

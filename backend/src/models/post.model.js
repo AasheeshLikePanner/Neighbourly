@@ -19,6 +19,10 @@ const postSchema = new Schema({
         required: true,
         enum: ['help', 'recommendation', 'update', 'event'],
     },
+    city: {
+        type: String,
+        trim: true
+    },
     location: {
         type: {
             type: String,
