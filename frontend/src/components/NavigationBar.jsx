@@ -9,6 +9,7 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
   const [showBadgeDialog, setShowBadgeDialog] = useState(false);
   const [selectedBadges, setSelectedBadges] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState('');
+  const [isLocationMode, setIsLocationMode] = useState(false);
   const searchRef = useRef(null);
 
   // Sample badge data
@@ -29,6 +30,14 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
 
   const handleSearch = (e) => {
     e.preventDefault();
+    if (isLocationMode) {
+      // If in location mode, save the input as location and switch back
+      setSelectedLocation(searchQuery);
+      setSearchQuery('');
+      setIsLocationMode(false);
+      return;
+    }
+    
     // Format the search query with filters
     let query = searchQuery;
     if (selectedLocation) query += ` location:${selectedLocation}`;
@@ -41,14 +50,21 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
     console.log('Searching for:', query.trim());
   };
 
+  const handleLocationClick = () => {
+    setIsLocationMode(true);
+    setSearchQuery('');
+    searchRef.current?.focus();
+  };
+
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedBadges([]);
     setSelectedLocation('');
+    setIsLocationMode(false);
   };
 
   const BadgeDialog = () => (
-    <div className="fixed backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-3xl p-6 w-full max-w-md mx-4 shadow-2xl">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-gray-900">Filter by Badges</h3>
@@ -135,12 +151,22 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
                   <div className="flex-1 flex items-center px-6 py-4">
                     <Search className="w-5 h-5 text-gray-400 mr-3" />
                     <input
+                      ref={searchRef}
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search communities, people, events..."
+                      placeholder={
+                        isLocationMode 
+                          ? "Enter location to find nearby..." 
+                          : "Search communities, people, events..."
+                      }
                       className="flex-1 text-sm bg-transparent outline-none placeholder-gray-400 text-gray-900"
                     />
+                    {isLocationMode && (
+                      <span className="text-xs text-blue-600 font-medium mr-3">
+                        Press Enter to set location
+                      </span>
+                    )}
                   </div>
                   
                   {/* Filter Cards */}
@@ -148,12 +174,9 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
                     {/* Location Filter */}
                     <button
                       type="button"
-                      onClick={() => {
-                        const loc = prompt("Enter location (city name):");
-                        if (loc !== null) setSelectedLocation(loc);
-                      }}
+                      onClick={handleLocationClick}
                       className={`p-3 rounded-2xl transition-all duration-200 ${
-                        selectedLocation 
+                        selectedLocation || isLocationMode
                           ? 'bg-blue-100 text-blue-600 shadow-lg shadow-blue-100/50' 
                           : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
                       }`}
