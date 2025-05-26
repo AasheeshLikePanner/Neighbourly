@@ -150,7 +150,6 @@ const SocialApp = () => {
   };
 
   const handleViewDetails = (postId) => {
-    // You might want to handle this differently for profile view
     navigate(`/post/${postId}`)
     console.log('View details for post:', postId);
   };

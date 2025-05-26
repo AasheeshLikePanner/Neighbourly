@@ -196,7 +196,7 @@ const Profile = () => {
                 onClick={() => handleLogout()}
               >
                 <LogOut className="w-4 h-4" />
-                <span>Edit Profile</span>
+                <span>Log Out</span>
               </button>
             ) : (
               <>

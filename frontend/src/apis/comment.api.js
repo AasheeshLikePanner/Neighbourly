@@ -5,11 +5,8 @@ const apiPrefix = "http://localhost:8000"
 export const addCommentInPost = async (postId, content) => {
     try {
         const comment = await axios.post(apiPrefix + '/comments/create', {content}, {withCredentials:true});
-        console.log(comment);
-        
         const post = await axios.post(apiPrefix + '/posts/add-comment', {postId, commentId:comment.data.data._id}, {withCredentials:true})
-        console.log(post);
-    
+        return comment.data.data;
     } catch (error) {
         throw error;
     }
