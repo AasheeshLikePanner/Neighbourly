@@ -4,8 +4,12 @@ import designSystem from '../utils/designSystem';
 import POST_TYPES from '../utils/postTypes';
 import  formatTwitterDate  from '../utils/dateUtils';
 import { Tooltip } from './Tooltip';
+import { useNavigate } from 'react-router-dom';
+
 
 const PostFeed = ({ getTypeConfig, posts = [], handleLike, likedPosts, isLoading, onViewDetails }) => {
+  const navigate = useNavigate();
+  
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -65,8 +69,8 @@ const PostFeed = ({ getTypeConfig, posts = [], handleLike, likedPosts, isLoading
                         <span className="hidden sm:inline">2</span>
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-2 text-sm text-gray-500">
-                      <span className="font-medium truncate">@{post.owner.username}</span>
+                    <div className="flex flex-wrap items-center gap-x-2 text-sm  text-gray-500">
+                      <span onClick={() => {navigate(`/profile/${post.owner.username}`)}} className="font-medium truncate hover:text-amber-300 cursor-pointer">@{post.owner.username}</span>
                       <span>•</span>
                       <Tooltip content={post.city}>
                         <div className="flex items-center space-x-1 max-w-[120px] group">

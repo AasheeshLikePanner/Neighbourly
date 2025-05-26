@@ -14,7 +14,6 @@ export default function ProfileBar({ user, profileData, profilePosts, getTypeCon
       owner: user // Replace owner with the full user data
     }));
     setPosts(postsWithOwner);
-    console.log("Posts after adding user:", postsWithOwner);
   }
   useEffect(() => { addUserToPosts() }, [profilePosts])
 
