@@ -293,6 +293,18 @@ const getUser = asyncHandler(async (req, res) => {
     ))
 })
 
+const logoutUser = asyncHandler(async (req, res) => {
+    return res
+    .status(200)
+    .cookie("accessToken", null, {httpOnly: true, secure: false, sameSite: "lax"})
+    .cookie("refreshToken", null, {httpOnly: true, secure: false, sameSite: "lax"})
+    .json(
+        new ApiResponse(
+            200, 
+            "User logOut In Successfully"
+        )
+    )
+})
 
 export {
     registerUser,
@@ -301,5 +313,6 @@ export {
     getCurrentUser,
     addPostToHistory,
     getPostHistory,
-    getUser
+    getUser,
+    logoutUser
 }

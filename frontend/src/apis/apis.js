@@ -41,3 +41,12 @@ export const getUserProfile = async (username) => {
         throw error;
     }
 }
+
+
+export const logoutUser = async () => {
+    try {
+        const response = await axios.post(apiPrefix + '/users/logout', {}, { withCredentials: true });
+    } catch (error) {
+        throw error;
+    }
+}

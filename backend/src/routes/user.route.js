@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {upload} from '../middlewares/multer.middleware.js'
-import { loginUser, registerUser, getCurrentUser, getUser, addPostToHistory, getPostHistory } from "../controllers/user.controller.js";
+import { loginUser, registerUser, getCurrentUser, getUser, addPostToHistory, getPostHistory, logoutUser } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 
@@ -19,5 +19,6 @@ router.route("/add-solution-to-user-submissions").post(verifyJWT, addPostToHisto
 
 router.route("/get-user-submissions").get(verifyJWT, getPostHistory)
 
+router.route("/logout").post(verifyJWT, logoutUser);
 
 export default router;

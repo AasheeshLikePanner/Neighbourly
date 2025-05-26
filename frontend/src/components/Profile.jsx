@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   User, Settings, Mail, Calendar, Link, MapPin,
-  Heart, MessageCircle, Bookmark, ChevronDown, MoreHorizontal
+  Heart, MessageCircle, Bookmark, ChevronDown, MoreHorizontal, LogOut 
 } from 'lucide-react';
 import designSystem from '../utils/designSystem';
 import { getUserPosts } from '../apis/post.api';
-import { getUserProfile } from '../apis/apis';
+import { getUserProfile, logoutUser } from '../apis/apis';
 import useStore from '../store/store';
 
 const Profile = () => {
@@ -70,6 +70,17 @@ const Profile = () => {
   const handleFollow = async () => {
     setIsFollowing(!isFollowing);
   };
+
+  const handleLogout = async () => {
+    try {
+      const response = await logoutUser();
+      console.log(response);
+      
+      navigate('/auth');
+    } catch (error) {
+      throw error;
+    }
+  }
 
   if (isLoading) {
     return (
@@ -182,9 +193,9 @@ const Profile = () => {
                   color: designSystem.colors.neutral.gray800,
                   borderRadius: designSystem.borderRadius.full
                 }}
-                onClick={() => navigate('/settings')}
+                onClick={() => handleLogout()}
               >
-                <Settings className="w-4 h-4" />
+                <LogOut className="w-4 h-4" />
                 <span>Edit Profile</span>
               </button>
             ) : (

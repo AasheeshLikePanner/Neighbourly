@@ -6,7 +6,7 @@ export const getUserLikes = async (userId, itemType) => {
     try {
         console.log(userId);
         
-        const response = await axios.post(apiPrefix+ '/likes/userlikes',{userId, itemType});
+        const response = await axios.post(apiPrefix+ '/likes/userlikes',{userId, itemType}, {withCredentials:true});
         console.log(response.data);
         return response.data.data;
     } catch (error) {

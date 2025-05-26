@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { loginUser, signUpUser } from '../apis/apis';
 import useStore from '../store/store'
+import { useNavigate } from 'react-router-dom';
 
 const AuthPage = () => {
   const [activeTab, setActiveTab] = useState('login');
@@ -15,6 +16,8 @@ const AuthPage = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const fileInputRef = useRef(null);
   const { user, setUser } = useStore()
+  const navigate = useNavigate()
+
   // Register form
   const { register: registerRegister, handleSubmit: handleRegisterSubmit, formState: { errors: registerErrors }, reset: resetRegister } = useForm();
 
@@ -135,20 +138,11 @@ const AuthPage = () => {
     }
 
     try {
-      // const response = await fetch('https://your-api-endpoint.com/login', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     email: data.email,
-      //     password: data.password,
-      //   }),
-      // });
       const response = await loginUser(data);
       console.log(response.data);
 
       setUser(response.data.user);
+      navigate('/')
       // Handle success (redirect, store token, etc.)
     } catch (error) {
       console.error('Login error:', error);
