@@ -2,8 +2,11 @@ import React, { useState, useRef } from 'react';
 import { Search, MapPin, Users, X, ChevronDown, Bell, Plus, Menu, Filter } from 'lucide-react';
 import designSystem from '../utils/designSystem';
 import { useNavigate } from 'react-router-dom';
+import { getAllPost } from '../apis/post.api';
+import POST_TYPES from '../utils/postTypes';
 
-const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, mobileMenuOpen }) => {
+
+const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, mobileMenuOpen, setPosts, activeFilter }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [showBadgeDialog, setShowBadgeDialog] = useState(false);
@@ -28,11 +31,18 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
     );
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (isLocationMode) {
       // If in location mode, save the input as location and switch back
+      console.log('searching');
+      console.log(searchQuery);
+      
       setSelectedLocation(searchQuery);
+      if (activeFilter.toLowerCase() !== 'nearby') {
+        const response = await getAllPost({filterType:activeFilter.toLowerCase(), city:searchQuery});
+        setPosts(response.posts)
+      }
       setSearchQuery('');
       setIsLocationMode(false);
       return;
@@ -40,10 +50,18 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
     
     // Format the search query with filters
     let query = searchQuery;
-    if (selectedLocation) query += ` location:${selectedLocation}`;
-    if (selectedBadges.length > 0) {
+    if (selectedLocation){
+      console.log(selectedLocation);
+      
+    }else if (selectedBadges.length > 0) {
+
+      const matchingPostType = POST_TYPES.find(postType => postType.id === selectedBadges[0]);
+      console.log(matchingPostType.value);
+      
+      const response = await getAllPost({filterType:activeFilter.toLowerCase(), type:matchingPostType.value});
+      setPosts(response.posts)
       const badgeNames = selectedBadges.map(id => 
-        availableBadges.find(b => b.id === id)?.name.toLowerCase()
+        POST_TYPES.find(b => b.id === id)?.label.toLowerCase()
       ).join(',');
       query += ` badges:${badgeNames}`;
     }
@@ -64,7 +82,7 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
   };
 
   const BadgeDialog = () => (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-3xl p-6 w-full max-w-md mx-4 shadow-2xl">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-gray-900">Filter by Badges</h3>
@@ -77,7 +95,7 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
         </div>
         
         <div className="space-y-3 max-h-64 overflow-y-auto">
-          {availableBadges.map(badge => (
+          {POST_TYPES.map(badge => (
             <div 
               key={badge.id} 
               onClick={() => handleBadgeToggle(badge.id)}
@@ -92,7 +110,7 @@ const NavigationBar = ({ user, setShowNewPost, setMobileMenuOpen, showNewPost, m
               }`}>
                 <span className="text-lg">{badge.icon}</span>
               </div>
-              <span className="font-medium text-gray-900">{badge.name}</span>
+              <span className="font-medium text-gray-900">{badge.label}</span>
               {selectedBadges.includes(badge.id) && (
                 <div className="ml-auto w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                   <div className="w-2 h-2 bg-white rounded-full"></div>

@@ -7,6 +7,7 @@ import axios from 'axios';
 import debounce from 'lodash.debounce';
 import { createPost } from '../apis/post.api';
 import POST_TYPES from '../utils/postTypes';
+import useStore from '../store/store';
 
 const CreatePost = ({ onPostCreated }) => {
   const { register, handleSubmit, setValue, watch, reset } = useForm({
@@ -29,6 +30,7 @@ const CreatePost = ({ onPostCreated }) => {
   const emojiPickerRef = useRef(null);
   const locationInputRef = useRef(null);
   const postTypeDropdownRef = useRef(null);
+  const {user} = useStore()
 
   const content = watch('content', '');
   const postType = watch('type', 'update');
@@ -247,7 +249,7 @@ const CreatePost = ({ onPostCreated }) => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex space-x-4">
           <img
-            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face"
+            src={user.avatar}
             alt="Your avatar"
             className="w-11 h-11 rounded-xl object-cover"
             style={{
@@ -304,6 +306,7 @@ const CreatePost = ({ onPostCreated }) => {
                       style={{
                         color: type.color,
                         backgroundColor: postType === type.value ? type.bgColor : 'transparent',
+                        borderColor:type.borderColor,
                         fontWeight: postType === type.value
                           ? designSystem.typography.fontWeight.semibold
                           : designSystem.typography.fontWeight.normal

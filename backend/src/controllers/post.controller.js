@@ -25,7 +25,7 @@ const createPost = asyncHandler(async (req, res) => {
     }
 
     const newPost = await Post.create({
-        image:image.url,
+        image:image ? image.url: undefined,
         content,
         city,
         type,
@@ -169,12 +169,21 @@ const getPost = asyncHandler(async (req, res) => {
 const getPosts = asyncHandler(async (req, res) => {
     console.log(req.body);
 
-    const { filterType, latitude, longitude } = req.body;
+    const { filterType, latitude, longitude, type, city } = req.body;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-
+    
     let query = {};
+
+    // Add filters for type and city if they exist in request body
+    if (type) {
+        query.type = type; // exact match since it's an enum
+    }
+    
+    if (city) {
+         query.city = { $regex: new RegExp(city.split(',')[0].trim(), 'i') };
+    }
 
     let sort = {};
     let aggregatePipeline = [];
@@ -188,9 +197,7 @@ const getPosts = asyncHandler(async (req, res) => {
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-            query = {
-                createdAt: { $gte: sevenDaysAgo }
-            };
+            query.createdAt = { $gte: sevenDaysAgo };
             sort = { likeCount: -1, createdAt: -1 };
             break;
 
@@ -204,8 +211,12 @@ const getPosts = asyncHandler(async (req, res) => {
             if (!latitude || !longitude) {
                 return res.status(400).json({ message: "Latitude and Longitude required for nearby filter" });
             }
-            // Assuming you add a 'location' field in your schema with GeoJSON format
-            // If you don't have location in schema, you cannot do geo queries
+            
+            // Apply type and city filters to nearby query if they exist
+            let nearbyQuery = {};
+            if (type) nearbyQuery.type = type;
+            if (city) nearbyQuery.city = { $regex: new RegExp(city, 'i') };
+            
             aggregatePipeline = [
                 {
                     $geoNear: {
@@ -213,7 +224,7 @@ const getPosts = asyncHandler(async (req, res) => {
                         distanceField: "distance",
                         maxDistance: 20000, // 10 km radius, adjust as needed
                         spherical: true,
-                        query: {}
+                        query: nearbyQuery
                     }
                 },
                 { $sort: { distance: 1, createdAt: -1 } },
@@ -263,8 +274,7 @@ const getPosts = asyncHandler(async (req, res) => {
         .populate('owner', 'username avatar fullName')
         .lean();
 
-    // Add comment count for each post (optional but useful)
-    // Since you have comment array in post, just count length
+    // Add comment count for each post
     const postsWithCommentCount = posts.map(post => ({
         ...post,
         commentCount: post.comment.length

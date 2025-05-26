@@ -222,6 +222,8 @@ const SocialApp = () => {
         setMobileMenuOpen={setMobileMenuOpen}
         showNewPost={showNewPost}
         mobileMenuOpen={mobileMenuOpen}
+        setPosts={setPosts}
+        activeFilter={activeFilter}
       />
 
       {mobileMenuOpen && <MobileMenu setMobileMenuOpen={setMobileMenuOpen} />}

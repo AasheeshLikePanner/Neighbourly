@@ -114,7 +114,7 @@ const AuthPage = () => {
     submissionData.append('fullName', data.fullName);
 
     if (data.avatar && data.avatar[0]) {
-      submissionData.append('image', data.avatar[0]);
+      submissionData.append('avatar', data.avatar[0]);
     }
     for (let pair of submissionData.entries()) {
       console.log(pair[0] + ':', pair[1]);
@@ -123,8 +123,9 @@ const AuthPage = () => {
 
     try {
       const response = await signUpUser(submissionData);
-      console.log(response.data.data);
-      setUser(response.data.data);
+      console.log(response.data);
+      setUser(response.data.user);
+      navigate('/')
     } catch (error) {
       console.error('Registration error:', error);
       // Handle error (show error message, etc.)

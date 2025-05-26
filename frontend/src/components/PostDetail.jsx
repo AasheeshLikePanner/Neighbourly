@@ -122,7 +122,6 @@ const PostDetail = () => {
     if (!commentText.trim()) return;
 
     try {
-      // const newComment = await addCommentInPost(postId, commentText.trim());
       // setPost(prev => ({
       //   ...prev,
       //   commentDetails: [newComment, ...prev.commentDetails]
@@ -130,7 +129,7 @@ const PostDetail = () => {
       e.preventDefault();
       if (!commentText.trim() || !user) return;
 
-      const newComment = {
+      const tmepData = {
         _id: `temp-${Date.now()}`,
         content: commentText.trim(),
         likeCount: 0,
@@ -142,10 +141,11 @@ const PostDetail = () => {
           avatar: user.avatar
         }
       };
+      await addCommentInPost(postId, commentText.trim());
 
       setPost(prev => ({
         ...prev,
-        commentDetails: [newComment, ...prev.commentDetails]
+        commentDetails: [tmepData, ...prev.commentDetails]
       }));
       setCommentText('');
       setReplyingTo(null);

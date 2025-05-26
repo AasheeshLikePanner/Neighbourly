@@ -22,12 +22,16 @@ export const loginUser = async (data) => {
 
 export const signUpUser = async (formData) => {
     try {
+        for (let [key, value] of formData.entries()) {
+  console.log(key, value);
+}
+
         const response = await axios.post(apiPrefix + "/users/register", formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
         });
-        return response;
+        return response.data;
     } catch (error) {
         throw error;
     }
