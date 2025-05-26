@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, MapPin, ChevronRight, Calendar } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, MapPin, ChevronRight, Calendar, Compass } from 'lucide-react';
 import designSystem from '../utils/designSystem';
 import POST_TYPES from '../utils/postTypes';
 import  formatTwitterDate  from '../utils/dateUtils';
